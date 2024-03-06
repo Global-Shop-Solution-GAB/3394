@@ -1,0 +1,668 @@
+Program.Sub.ScreenSU.Start
+gui.Form1..create
+gui.Form1..caption("Work Order Status")
+gui.Form1..size(5040,3840)
+gui.Form1..position(0,0)
+gui.Form1..event(unload,End)
+gui.Form1..alwaysontop(False)
+gui.Form1..fontname("Arial")
+gui.Form1..fontsize(8)
+gui.Form1..forecolor(0)
+gui.Form1..fontstyle(,,,,)
+gui.Form1..BackColor(-2147483633)
+gui.Form1..controlbox(True)
+gui.Form1..maxbutton(True)
+gui.Form1..minbutton(True)
+gui.Form1..mousepointer(0)
+gui.Form1..moveable(True)
+gui.Form1..sizeable(True)
+gui.Form1..ShowInTaskBar(True)
+gui.Form1..titlebar(True)
+gui.Form1.frame1.create(frame)
+gui.Form1.frame1.caption("Select Work Order")
+gui.Form1.frame1.size(4425,2205)
+gui.Form1.frame1.position(185,200)
+gui.Form1.frame1.visible(True)
+gui.Form1.frame1.fontname("Arial")
+gui.Form1.frame1.fontsize(8)
+gui.Form1.txtJob.create(textbox,"",True,1035,300,0,440,700,True,0,Arial,8,-2147483643,1)
+gui.Form1.txtJob.parent("frame1")
+gui.Form1.cmdbrws.create(button)
+gui.Form1.cmdbrws.caption("^")
+gui.Form1.cmdbrws.visible(True)
+gui.Form1.cmdbrws.size(300,300)
+gui.Form1.cmdbrws.zorder(0)
+gui.Form1.cmdbrws.position(3595,700)
+gui.Form1.cmdbrws.enabled(True)
+gui.Form1.cmdbrws.parent("frame1")
+gui.Form1.cmdbrws.fontname("Arial")
+gui.Form1.cmdbrws.fontsize(8)
+gui.Form1.cmdbrws.event(click,cmdbrws_click)
+gui.Form1.cmdOK.create(button)
+gui.Form1.cmdOK.caption("SELECT")
+gui.Form1.cmdOK.visible(True)
+gui.Form1.cmdOK.size(855,375)
+gui.Form1.cmdOK.zorder(0)
+gui.Form1.cmdOK.position(300,2680)
+gui.Form1.cmdOK.enabled(True)
+gui.Form1.cmdOK.fontname("Arial")
+gui.Form1.cmdOK.fontsize(8)
+gui.Form1.cmdOK.event(click,cmdok_click)
+gui.Form1.cmdCNCL.create(button)
+gui.Form1.cmdCNCL.caption("CANCEL")
+gui.Form1.cmdCNCL.visible(True)
+gui.Form1.cmdCNCL.size(855,375)
+gui.Form1.cmdCNCL.zorder(0)
+gui.Form1.cmdCNCL.position(3600,2680)
+gui.Form1.cmdCNCL.enabled(True)
+gui.Form1.cmdCNCL.fontname("Arial")
+gui.Form1.cmdCNCL.fontsize(8)
+gui.Form1.cmdCNCL.event(click,End)
+gui.Form1.lbl1.create(label,"Job",True,900,255,1,440,500,True,0,Arial,8,-2147483633,0)
+gui.Form1.lbl1.parent("frame1")
+gui.Form1.lbl2.create(label,"Job-Suffix",True,3105,255,1,440,1135,True,0,Arial,8,-2147483633,0)
+gui.Form1.lbl2.parent("frame1")
+gui.Form1.dropdownlist1.create(dropdownlist)
+gui.Form1.dropdownlist1.visible(True)
+gui.Form1.dropdownlist1.size(3465,330)
+gui.Form1.dropdownlist1.zorder(0)
+gui.Form1.dropdownlist1.position(445,1365)
+gui.Form1.dropdownlist1.enabled(True)
+gui.Form1.dropdownlist1.parent("frame1")
+gui.Form1.dropdownlist1.fontname("Arial")
+gui.Form1.dropdownlist1.fontsize(8)
+gui.Form1.txtDesc.create(textbox,"",True,2145,300,0,1460,700,True,0,Arial,8,-2147483643,1)
+gui.Form1.txtDesc.parent("frame1")
+gui.Form1.lbl3.create(label,"Description",True,1935,255,1,1490,500,True,0,Arial,8,-2147483633,0)
+gui.Form1.lbl3.parent("frame1")
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+
+Variable.UDT.JobParent.Define("Job",String,Job)
+Variable.UDT.JobParent.Define("Suffix",String,Suffix)
+Variable.UDT.JobParent.Define("Part",String,Part)
+Variable.UDT.JobParent.Define("Description",String,Description)
+Variable.UDT.JobParent.Define("Date_Opened",Date,Date_Opened)
+Variable.UDT.JobParent.Define("Date_Closed",Date,Date_Closed)
+Variable.UDT.JobParent.Define("Qty_Order",Float,Qty_Order)
+Variable.UDT.JobParent.Define("Qty_Completed",Float,Qty_Completed)
+Variable.uGlobal.uJobParent.Declare("JobParent")
+
+Variable.UDT.JobChild.Define("ParentJob",String)
+Variable.UDT.JobChild.Define("ParentSuffix",String)
+Variable.UDT.JobChild.Define("Job",String,Job)
+Variable.UDT.JobChild.Define("Suffix",String,Suffix)
+Variable.UDT.JobChild.Define("Part",String,Part)
+Variable.UDT.JobChild.Define("Description",String,Description)
+Variable.UDT.JobChild.Define("Units_Complete",Float,Units_Complete)
+Variable.UDT.JobChild.Define("Units_Open",Float,Units_Open)
+Variable.uGlobal.uJobChild.Declare("JobChild")
+
+Variable.Global.Count.Declare(Long,0)
+Variable.Global.sPage1.Declare(String)
+Variable.Global.lWaitct.Declare(Long,0)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+
+V.Local.sfile.Declare(String)
+V.Local.bHere.Declare(Boolean)
+V.Local.iHndl.Declare(Long)
+
+F.ODBC.Connection!conA.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+'delete the existing file
+F.Intrinsic.String.Concat(V.System.Temp,"\SR.txt",V.Local.sFile)
+	F.Intrinsic.File.Exists(V.Local.sfile,V.Local.bHere)
+		F.Intrinsic.Control.If(V.Local.bHere,=,True)
+			F.Intrinsic.File.DeleteFile(V.Local.sfile)
+		F.Intrinsic.Control.EndIf
+
+Gui.Form1..Show
+
+Program.Sub.Main.End
+
+Program.Sub.End.Start
+
+F.ODBC.Connection!conA.Close
+F.Intrinsic.Control.End
+
+Program.Sub.End.End
+
+program.sub.cmdok_click.start
+
+Gui.Form1.cmdbrws.Enabled(false)
+Gui.Form1.cmdCNCL.Enabled(false)
+Gui.Form1.cmdOK.Enabled(false)
+
+V.Local.sFilename.Declare(String)
+V.Local.sJob.Declare(String)
+V.Local.sArray.Declare(String)
+V.Local.sJH.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.iColCt.Declare(Long)
+V.Local.iC.Declare(Long)
+V.Local.iFor.Declare(Long)
+V.Local.iSheetcount.Declare(Long)
+V.Local.sWait.Declare(String)
+V.Local.sSheet.Declare(String)
+V.Local.sShArray.Declare(String)
+V.Local.iArrayCt.Declare(Long)
+V.Local.sFile.Declare(String)
+V.Local.sHeading.Declare(String)
+
+Gui.Form1..Visible(false)
+F.Intrinsic.UI.InvokeWaitDialog("","Status Report")
+'set job to screen value
+V.Local.sJob.Set(V.Screen.Form1!txtJob.Text)
+F.Intrinsic.String.Trim(V.Local.sJob,V.Local.sJob)
+'preset column count
+V.Local.iColCt.Set(6)
+'split text from dropdown, redim to 3 elements
+F.Intrinsic.String.Split(V.Screen.Form1!dropdownlist1.Text,"-",V.Local.sRet)
+	V.Local.sRet.RedimPreserve(0,3)
+'file for writing lines
+F.Intrinsic.String.Concat(V.System.Temp,"\SR.txt",V.Local.sFilename)
+'call sub to get the parent jobs
+F.Intrinsic.Control.CallSub(Getjobs)
+'get count of job/suffix for wait dialo
+F.Intrinsic.Math.Add(V.uGlobal.uJobParent!Job.UBound,1,V.Local.iC)
+'----------------------------------------------------------------------------------
+'for each parent job
+F.Intrinsic.Control.For(V.Local.iFor,V.uGlobal.uJobParent!Job.LBound,V.uGlobal.uJobParent!Job.UBound,1)
+'clear heading
+	V.Local.sHeading.Set("")
+'for wait dialog
+	F.Intrinsic.Math.Add(V.global.lwaitct,1,V.global.lwaitct)
+	F.Intrinsic.Math.Add(V.Local.iSheetcount,1,V.Local.iSheetcount)
+	F.Intrinsic.String.Concat("Gathering Data for Sheet ",V.Local.iSheetcount," of ",V.Local.iC,V.Local.sWait)
+	F.Intrinsic.Control.If(V.Local.iC,=,1)
+		F.Intrinsic.UI.ChangeWaitStatus(V.Local.sWait,V.Local.iSheetcount,1,2)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.UI.ChangeWaitStatus(V.Local.sWait,V.Local.iSheetcount,1,V.Local.iC)
+	F.Intrinsic.Control.EndIf
+
+'if there is only 1 sheet/job selected
+	F.Intrinsic.Control.If(V.Local.iC,=,1)
+		V.Local.sSheet.Set(V.uGlobal.uJobParent(v.Local.iFor)!DESCRIPTION)
+	F.Intrinsic.Control.Else
+	'if the first sheet, name it "Parent'
+		F.Intrinsic.Control.If(V.Local.iSheetcount,=,1)
+			V.Local.sSheet.Set("Parent")
+	'all other sheets will be the part description
+		F.Intrinsic.Control.Else
+			V.Local.sSheet.Set(V.uGlobal.uJobParent(v.Local.iFor)!DESCRIPTION)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+
+	'strip characters from what will be the sheet name (excel doesn't like them for sheet names)
+		F.Intrinsic.String.StripCharacters(V.Local.sSheet,V.Local.sSheet)
+		F.Intrinsic.String.Split(V.Local.sArray,"*!*",V.Local.sShArray)
+	'see if name has been used before; add a "^" for each duplicate (excel won't allow 2 sheets with the same name, the ^ makes them different, and is a character that is allowed)
+		F.Intrinsic.Control.For(V.Local.iArrayCt,V.Local.sShArray.LBound,V.Local.sShArray.UBound,1)
+				F.Intrinsic.Control.If(V.Local.sSheet.trim,=,V.Local.sShArray(v.Local.iArrayCt).trim)
+					F.Intrinsic.String.Concat(V.Local.sSheet.trim,"^",V.Local.sSheet)
+				F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.iArrayCt)
+	'if only 1 sheet, the array is just that one sheet
+		F.Intrinsic.Control.If(V.Local.iC,=,1)
+			V.Local.sArray.Set(V.Local.sSheet.trim)
+	'if more thwn one sheet, add the name to the array of sheet names
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Concat(V.Local.sArray,"*!*",V.Local.sSheet.trim,V.Local.sArray)
+		F.Intrinsic.Control.EndIf
+
+'get the Parent's material and labor
+	F.Intrinsic.Control.CallSub(Parentdetail,"Job",V.uGlobal.uJobParent(v.Local.iFor)!Job,"Suffix",V.uGlobal.uJobParent(v.Local.iFor)!Suffix,"For",V.Local.iFor)
+'get heading
+	F.Intrinsic.String.Concat("$!$",V.uGlobal.uJobParent(v.Local.iFor)!Part,"*!*",V.uGlobal.uJobParent(v.Local.iFor)!Description,"$!$$!$PART#*!*DESCRIPTION",V.Local.sHeading)
+'if the first record, don't add a new sheet
+	F.Intrinsic.Control.If(V.Local.iFor,=,0)
+		F.Intrinsic.String.Concat(V.Local.sHeading,V.Args.File,V.Local.sFile)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Concat(V.Local.sFile,"&^&",V.Local.sHeading,V.Args.File,V.Local.sFile)
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Next(V.Local.iFor)
+
+'-----------------------------------------------------------------------------------
+'if there's at least 1 sheet, create the workbook
+F.Intrinsic.Control.If(V.Local.iC,>,0)
+	F.Intrinsic.File.String2File(V.Local.sFilename,V.Local.sFile)
+	F.Intrinsic.Control.CallSub(Create_sheets,"lC",V.Local.iC,"Sheets",V.Local.sArray)
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.CallSub(End)
+F.Intrinsic.Control.EndIf
+
+program.sub.cmdok_click.end
+
+program.sub.cmdbrws_click.start
+
+V.Local.sTitles.Declare(String)
+V.Local.iWidths.Declare(Long)
+
+V.Local.sRet.Declare(String)
+V.Local.sJob.Declare(String)
+V.Local.sSel.Declare(String)
+
+F.Intrinsic.String.Split("WORK ORDER*!*SUFFIX*!*PART*!*DESCRIPTION","*!*",V.Local.sTitles)
+F.Intrinsic.String.Split("2000*!*1000*!*3000*!*4000","*!*",V.Local.iWidths)
+
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+Gui.Form1.dropdownlist1.ClearItems
+'wo browser; all open jobs
+V.Local.sSel.Set("select JOB, SUFFIX,PART,DESCRIPTION from V_JOB_HEADER where year(DATE_CLOSED)='1900' and Suffix='000' order by JOB,PART")
+F.Intrinsic.UI.Browser("Select Work Order","conA",V.Local.sSel,V.Local.sTitles,V.Local.iWidths,10000,10000,V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+		Gui.Form1.txtJob.Text(V.Local.sRet(0).Trim)
+		Gui.Form1.txtDesc.Text(V.Local.sRet(2).Trim)
+
+	'give option to select just level 1&2 jobs
+	Gui.Form1.dropdownlist1.AddItem("Level 1 & 2 Only")
+
+	'get job information for dropdown for single job selection
+	V.Local.sJob.Set(V.Screen.Form1!txtJob.Text)
+	F.Intrinsic.String.Concat("select rtrim(JOB)+' - '+rtrim(SUFFIX)+' - '+rtrim(PART)+' - '+rtrim(DESCRIPTION)  as COMBO from V_JOB_HEADER where year(DATE_CLOSED)='1900' and JOB='",V.Local.sJob.Trim,"' ",V.Local.sSel)
+	F.ODBC.Connection!conA.OpenRecordsetRO("rstA",V.Local.sSel)
+		F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstA.EOF,=,True)
+			Gui.Form1.dropdownlist1.AddItem(V.ODBC.conA!rstA.FieldVal!COMBO)
+	F.ODBC.conA!rstA.MoveNext
+		F.Intrinsic.Control.Loop
+	F.ODBC.conA!rstA.Close
+
+	'add option for "all" jobs in dropdown
+	Gui.Form1.dropdownlist1.AddItem("ALL")
+
+	'set option to level 1&2 jobs
+	Gui.Form1.dropdownlist1.Text("Level 1 & 2 Only")
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.CallSub(End)
+F.Intrinsic.Control.EndIf
+
+
+
+program.sub.cmdbrws_click.end
+
+Program.Sub.Create_Sheets.Start
+
+V.Local.sTemplate.Declare(String)
+V.Local.sExport.Declare(String)
+V.Local.svalue.Declare(String)
+V.Local.sNames.Declare(String)
+V.Local.sSheet.Declare(String)
+V.Local.sWait.Declare(String)
+V.Local.iSheet.Declare(Long)
+V.Local.iHndl.Declare(Long)
+V.Local.iSheetCount.Declare(Long)
+V.Local.iFor.Declare(Long)
+V.Local.sWkSht.Declare(String)
+V.Local.sBlankSheet.Declare(String)
+V.Local.bExists.Declare(Boolean)
+
+F.Intrinsic.String.Concat(V.System.Temp,"\SR.txt",V.Local.sValue)
+F.Intrinsic.String.Concat(V.System.Temp,"\Status_Report.xls",V.Local.sBlankSheet)
+F.Intrinsic.String.Concat(V.System.Temp,"\Status_Report_Copy.xls",V.Local.sExport)
+
+V.Local.iSheetCount.Set(V.Args.lC)
+'templates are pre formatted with conditions
+F.Intrinsic.Control.If(V.Local.iSheetCount,<=,40)
+	F.Intrinsic.String.Concat(V.Caller.FilesDir,"\Templates\STATUS_Template",V.Args.lC,".xls",V.Local.sTemplate)
+'copy the template, so it doesn't write to the template itself
+	F.Intrinsic.File.CopyFile(V.Local.sTemplate,V.Local.sExport)
+'if the wrkbk will be more than 40sheets, use the largest one, and we'll add sheets to it
+F.Intrinsic.Control.Else
+	F.Intrinsic.String.Concat(V.Caller.FilesDir,"\Templates\STATUS_Template40.xls",V.Local.sTemplate)
+'copy the template, so it doesn't write to the template itself
+	F.Intrinsic.File.CopyFile(V.Local.sTemplate,V.Local.sExport)
+'open excel
+	F.Automation.MSExcel.CreateAppObject("Excel")
+	F.Automation.MSExcel.OpenWorkbook("Excel",V.Local.sExport,V.Local.sExport)
+	'for more than 40 sheets, add another to the template
+		F.Intrinsic.Control.For(V.Local.iFor,41,V.Local.iSheetCount,1)
+			F.Intrinsic.String.Concat("Sheet",V.Local.iFor,V.Local.sWkSht)
+			Function.Automation.MSExcel.CreateWorksheet(V.Local.sExport,V.Local.sWkSht,V.Local.sWkSht)
+			F.Automation.Generic.DestroyObject(V.Local.sWkSht)
+		F.Intrinsic.Control.Next(V.Local.iFor)
+	F.Automation.MSExcel.SaveWorkbook(V.Local.sExport)
+	F.Automation.Generic.DestroyObject(V.Local.sExport)
+	F.Automation.Generic.DestroyObject("Excel")
+F.Intrinsic.Control.EndIf
+
+'sheet names have been passed
+V.Local.sNames.Set(V.Args.Sheets)
+'split the string of names
+F.Intrinsic.String.Split(V.Local.sNames,"*!*",V.Local.sNames)
+'delete exiting xls file
+F.Intrinsic.File.Exists(V.Local.sExport,V.Local.bExists)
+	F.Intrinsic.Control.If(V.Local.bExists,=,True)
+		F.Intrinsic.File.DeleteFile(V.Local.sExport)
+	F.Intrinsic.Control.EndIf
+
+'create the spreadsheet from the txt
+F.Intrinsic.File.File2String(V.Local.svalue,V.Local.svalue)
+F.Automation.MSexcel.WriteSpreadsheet(V.Local.sExport,V.Local.sTemplate,V.Local.svalue)
+'open the workbook for formatting
+F.Automation.MSExcel.CreateAppObject("Excel")
+F.Automation.MSExcel.OpenWorkbook("Excel",V.Local.sExport,V.Local.sExport)
+'for each sheet
+F.Intrinsic.Control.For(V.Local.iSheet,1,V.Local.sNames.UBound,1)
+	F.Intrinsic.String.Concat("Sheet",V.Local.iSheet,V.Local.sSheet)
+		F.Intrinsic.String.Concat("Formatting Sheet ",V.Local.iSheet," of ",V.Local.sNames.UBound,V.Local.sWait)
+	F.Automation.MSExcel.OpenWorksheet(V.Local.sExport,V.Local.sSheet,V.Local.iSheet)
+'set the sheet name
+	Function.Automation.MSExcel.NameWorksheet(V.Local.sSheet,V.Local.sNames(v.Local.iSheet))
+	F.Automation.Generic.DestroyObject(V.Local.sSheet)
+
+F.Intrinsic.Control.Next(V.Local.iSheet)
+'save the wrkbk
+F.Automation.MSExcel.SaveWorkbook(V.Local.sExport)
+F.Automation.Generic.DestroyObject(V.Local.sExport)
+F.Automation.Generic.DestroyObject("Excel")
+
+F.Intrinsic.UI.CloseWaitDialog
+'open the wrkbk tothe screen
+F.Intrinsic.Task.ShellExec(V.Local.iHndl,"OPEN",V.Local.sExport,"","",1)
+
+F.Intrinsic.Control.CallSub(End)
+
+
+Program.Sub.Create_Sheets.End
+
+Program.Sub.GetJobs.Start
+
+
+V.Local.sRet.Declare(String)
+V.Local.sSel.Declare(String)
+V.Local.sJob.Declare(String)
+V.Local.iFor.Declare(Long)
+V.Local.bIsParent.Declare(Boolean)
+V.Local.sNextSuffix.Declare(String)
+V.Local.iNextSuffix.Declare(Long)
+
+'set job to screen value
+F.Intrinsic.String.Trim(V.Screen.Form1!txtJob.Text,V.Local.sJob)
+'split text from dropdown, redim to 3 element
+F.Intrinsic.String.Split(V.Screen.Form1!dropdownlist1.Text,"-",V.Local.sRet)
+V.Local.sRet.RedimPreserve(0,3)
+
+
+'get additional job information
+V.uGlobal.uJobParent.Redim(-1,-1)
+V.uGlobal.uJobChild.Redim(-1,-1)
+
+'going to collect all jobs, and will filter out later
+F.Intrinsic.String.Concat("select distinct Job, Suffix, Part, Description, Date_Opened, Date_Closed,Qty_Order,Qty_Completed from V_Job_Header where Job='",V.Local.sJob,"' and Suffix >='000' order by Job,Suffix",V.Local.sSel)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstSel",V.Local.sSel)
+	F.Intrinsic.Control.if(V.ODBC.conA!rstSel.EOF,=,False)
+		F.Intrinsic.Variable.LoadUDTFromRecordset("ConA","rstSel","v.uglobal.uJobParent",False)
+	F.Intrinsic.Control.EndIf
+F.ODBC.conA!rstSel.Close
+
+'if no jobs are found, end script
+F.Intrinsic.Control.If(V.uGlobal.uJobParent.UBound,=,-1)
+	F.Intrinsic.Control.CallSub(End)
+F.Intrinsic.Control.EndIf
+
+'pick out jobs that are parents. These will start with 3 alpha characters in the Part Number
+'flag all records
+F.Intrinsic.Variable.UDTFlagAll(V.uGlobal.uJobParent)
+
+'for each job, see if it is a "parent"
+F.Intrinsic.Control.For(V.Local.iFor,V.uGlobal.uJobParent!Job.LBound,V.uGlobal.uJobParent!Job.UBound,1)
+	'get the 3rd character of the Part#
+	F.Intrinsic.String.Mid(V.uGlobal.uJobParent(v.Local.iFor)!Part,3,1,V.Local.sRet)
+	F.Intrinsic.Control.If(V.Local.sRet.UCase,>=,"A")
+	F.Intrinsic.Control.AndIf(V.Local.sRet.UCase,<=,"Z")
+		F.Intrinsic.Variable.UDTMultiUnFlag(V.uGlobal.uJobParent!Job,V.uGlobal.uJobParent(v.Local.iFor)!Job,V.uGlobal.uJobParent!Suffix,V.uGlobal.uJobParent(v.Local.iFor)!Suffix)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iFor)
+F.Intrinsic.Variable.UDTDeleteFlagged(V.uGlobal.uJobParent)
+
+'split text from dropdown, redim to 3 element
+F.Intrinsic.String.Split(V.Screen.Form1!dropdownlist1.Text,"-",V.Local.sRet)
+V.Local.sRet.RedimPreserve(0,3)
+'if only a specific job was selected
+F.Intrinsic.Control.If(V.Local.sRet(0).Trim,<>,"ALL")
+F.Intrinsic.Control.andIf(V.Local.sRet(0).Trim,<>,"Level 1 & 2 Only")
+'flag all records
+	F.Intrinsic.Variable.UDTFlagAll(V.uGlobal.uJobParent)
+'unflag that one parent record
+	F.Intrinsic.Variable.UDTMultiUnFlag(V.uGlobal.uJobParent!Suffix,V.Local.sRet(1).Trim)
+'see which element that suffix is
+	F.Intrinsic.Variable.UDTMultiSeek(V.uGlobal.uJobParent!Suffix,V.Local.sRet(1).trim,V.Local.sNextSuffix)
+	V.Local.iNextSuffix.Set(V.Local.sNextSuffix)
+'if the last job
+	F.Intrinsic.Control.If(V.Local.iNextSuffix,=,V.uGlobal.uJobParent!Job.UBound)
+'else set the "next"to the max
+		V.Local.sNextSuffix.Set("999")
+	F.Intrinsic.Control.Else
+	'get the next element
+		F.Intrinsic.Math.Add(V.Local.sNextSuffix,1,V.Local.sNextSuffix)
+	'set the next suffix to the next parent suffix
+		V.Local.sNextSuffix.Set(V.uGlobal.uJobParent(v.Local.sNextSuffix)!Suffix)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Variable.UDTDeleteFlagged(V.uGlobal.uJobParent)
+
+'get the "child" jobs for that single parent
+'F.Intrinsic.String.Concat("select distinct Job, Suffix, Part, Description, Date_Opened, Date_Closed,Qty_Order,Qty_Completed from V_Job_Header where Job='",V.uGlobal.uJobParent!Job,"' and Suffix>'",V.uGlobal.uJobParent!Suffix,"' and Suffix<'",V.Local.sNextSuffix,"'order by Suffix",V.Local.sSel)
+F.Intrinsic.String.Concat(" select Job, Suffix, Part, Description,  Units_Open, Units_Complete from Job_Operations where Job='",V.uGlobal.uJobParent!Job,"' and Suffix='",V.uGlobal.uJobParent!Suffix,"' and LMO='M' and Seq<'995000' order by Seq",V.Local.sSel)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstSel",V.Local.sSel)
+	F.Intrinsic.Control.if(V.ODBC.conA!rstSel.EOF,=,False)
+		F.Intrinsic.Variable.LoadUDTFromRecordset("ConA","rstSel","v.uglobal.uJobChild",True)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.Variable.UDTMultiSeekSet(V.uGlobal.uJobChild!ParentJob,"",V.uGlobal.uJobChild!ParentJob,V.uGlobal.uJobParent!Job)
+	F.Intrinsic.Variable.UDTMultiSeekSet(V.uGlobal.uJobChild!ParentSuffix,"",V.uGlobal.uJobChild!ParentSuffix,V.uGlobal.uJobParent!Suffix)
+F.ODBC.conA!rstSel.Close
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+'===================================================================================================================
+'if more than a single job is selected:
+'for each parent job/suffix, get the "child" jobs
+F.Intrinsic.Control.For(V.Local.iFor,V.uGlobal.uJobParent!Job.LBound,V.uGlobal.uJobParent!Job.UBound,1)
+	F.Intrinsic.Math.Add(V.Local.iFor,1,V.Local.sNextSuffix)
+	F.Intrinsic.Control.If(V.Local.iFor,=,V.uGlobal.uJobParent!Job.UBound)
+		F.Intrinsic.String.Concat("select Job, Suffix, Part, Description,  Units_Open, Units_Complete from Job_Operations  where Job='",V.uGlobal.uJobParent(V.Local.iFor)!Job,"' and Suffix>'",V.uGlobal.uJobParent(V.Local.iFor)!Suffix,"' order by Suffix",V.Local.sSel)
+	F.Intrinsic.Control.Else
+	'set the next suffix to the next parent suffix
+	V.Local.sNextSuffix.Set(V.uGlobal.uJobParent(v.Local.sNextSuffix)!Suffix)
+		F.Intrinsic.String.Concat("select Job, Suffix, Part, Description,  Units_Open, Units_Complete from Job_Operations  where Job='",V.uGlobal.uJobParent(V.Local.iFor)!Job,"' and Suffix>'",V.uGlobal.uJobParent(V.Local.iFor)!Suffix,"' and Suffix<'",V.Local.sNextSuffix,"'order by Suffix",V.Local.sSel)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.Connection!conA.OpenRecordsetRO("rstSel",V.Local.sSel)
+		F.Intrinsic.Control.if(V.ODBC.conA!rstSel.EOF,=,False)
+			F.Intrinsic.Variable.LoadUDTFromRecordset("ConA","rstSel","v.uglobal.uJobChild",True)
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.Variable.UDTMultiSeekSet(V.uGlobal.uJobChild!ParentJob,"",V.uGlobal.uJobChild!ParentJob,V.uGlobal.uJobParent(v.Local.iFor)!Job)
+		F.Intrinsic.Variable.UDTMultiSeekSet(V.uGlobal.uJobChild!ParentSuffix,"",V.uGlobal.uJobChild!ParentSuffix,V.uGlobal.uJobParent(v.Local.iFor)!Suffix)
+	F.ODBC.conA!rstSel.Close
+F.Intrinsic.Control.Next(V.Local.iFor)
+
+Program.Sub.GetJobs.End
+
+Program.Sub.ParentDetail.Start
+
+V.Local.sRet.Declare(String)
+V.Local.sOSelect.Declare(String)
+V.Local.sJob.Declare(String)
+V.Local.sSuff.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.sHeadingA.Declare(String)
+V.Local.iSheetcount.Declare(Long)
+V.Local.iC.Declare(Long)
+V.Local.sWait.Declare(String)
+V.Local.sSheet.Declare(String)
+V.Local.sArray.Declare(String)
+V.Local.sShArray.Declare(String)
+V.Local.iArrayCt.Declare(Long)
+V.Local.sPart.Declare(String)
+V.Local.sDesc.Declare(String)
+V.Local.sSeq.Declare(String)
+V.Local.iVal.Declare(Long)
+V.Local.iJHVal.Declare(Long)
+V.Local.sMaterial.Declare(String)
+V.Local.sPOsel.Declare(String)
+V.Local.sJHb.Declare(String)
+V.Local.sJobOp.Declare(String)
+V.Local.sSuffOp.Declare(String)
+V.Local.sLabor2.Declare(String)
+V.Local.iYear.Declare(Long)
+V.Local.sComplete.Declare(String)
+V.Local.bSheet1.Declare(Boolean)
+V.Local.iRowCt.Declare(Long)
+V.Local.sValue.Declare(String)
+
+'1=complete
+'2=in process
+'3=not started
+
+'get material for the current job
+F.Intrinsic.String.Concat("select distinct JOB,SUFFIX,SEQ,PART,DESCRIPTION,DATE_START,DATE_COMPLETED,UNITS, FLAG_CLOSED,UNITS_OPEN, UNITS_COMPLETE from V_JOB_OPERATIONS where JOB='",V.Args.Job,"'and SUFFIX='",V.Args.Suffix,"' and ((LMO='M' and SEQ<'995000') or (LMO='O' and SEQ<='997000')) order by SEQ",V.Local.sOSelect)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstOSel",V.Local.sOSelect)
+	F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstOSel.EOF,=,True)
+		V.Local.sPart.Set(V.ODBC.conA!rstOSel.FieldValTrim!PART)
+		V.Local.sDesc.Set(V.ODBC.conA!rstOSel.FieldValTrim!DESCRIPTION)
+		V.Local.sSeq.Set(V.ODBC.conA!rstOSel.FieldValTrim!SEQ)
+		V.Local.sComplete.Set("")
+		V.Local.sValue.Set("")
+		V.Local.iVal.Set(0)
+		V.Local.iJHVal.Set(0)
+'__________________________________________________________________________________________________________________________	
+	'if the sequence is closed, set 1
+		F.Intrinsic.Control.If(V.ODBC.conA!rstOSel.FieldValTrim!FLAG_CLOSED,=,"Y")
+			V.Local.iJHVal.Set(1)
+	'if sequence still open...
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Concat("select QTY_ONHAND from INVENTORY_MSTR where PART='",V.Local.sPart,"'",V.Local.sMaterial)
+			F.ODBC.Connection!conA.OpenRecordsetRO("rstMat",V.Local.sMaterial)
+			'if the required qty is complete, set 1
+				F.Intrinsic.Control.If(V.ODBC.conA!rstMat.EOF,=,False)
+					F.Intrinsic.Control.If(V.ODBC.conA!rstMat.FieldVal!QTY_ONHAND,>=,V.ODBC.conA!rstOSel.FieldVal!UNITS)
+						V.Local.iJHVal.Set(1)
+				' if po hasn't been received in full, set 2
+					F.Intrinsic.Control.Else
+						F.Intrinsic.String.Concat("select * from PO_LINES where PART='",V.Local.sPart,"'and Record_no >'0000' and JOB='",V.Args.Job,"' and SUFFIX='",V.Args.Suffix,"' and QTY_ORDER>QTY_RECEIVED",V.Local.sPOsel)
+						F.ODBC.Connection!conA.OpenRecordsetRO("rstSPO",V.Local.sPOsel)
+							F.Intrinsic.Control.If(V.ODBC.conA!rstSPO.EOF,=,False)
+								V.Local.iJHVal.Set(2)
+							F.Intrinsic.Control.EndIf
+						F.ODBC.conA!rstSPO.Close
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+			F.ODBC.conA!rstMat.Close
+		F.Intrinsic.Control.EndIf
+'__________________________________________________________________________________________________________________________	
+	'if no status based on purchased material, must be manufactured
+		F.Intrinsic.Control.If(V.Local.iJHVal,=,0)
+			F.Intrinsic.String.Concat("select JOB,SUFFIX,Date_Closed, Date_Start from V_JOB_HEADER where  JOB='",V.Args.Job,"' and PART='",V.Local.sPart,"' order by DATE_CLOSED,Date_Start ",V.Local.sJHb)
+			F.ODBC.Connection!conA.OpenRecordsetRO("rstJHb",V.Local.sJHb)
+			'if there is job information
+				F.Intrinsic.Control.If(V.ODBC.conA!rstJHb.EOF,=,False)
+					V.Local.sJobOP.Set(V.ODBC.conA!rstJHb.FieldValTrim!JOB)
+					V.Local.sSuffOp.Set(V.ODBC.conA!rstJHb.FieldValTrim!SUFFIX)
+				'if job is closed, set 1
+					F.Intrinsic.Date.Year(V.ODBC.conA!rstJHb.FieldVal!Date_Closed,V.Local.iYear)
+					F.Intrinsic.Control.If(V.Local.iYear,<>,1900)
+						V.Local.iVal.Set(1)
+				'if not closed, bu started, set 2
+					F.Intrinsic.Control.Else
+						F.Intrinsic.Date.Year(V.ODBC.conA!rstJHb.FieldVal!Date_Start,V.Local.iYear)
+						F.Intrinsic.Control.If(V.Local.iYear,<>,1900)
+							V.Local.iVal.Set(2)
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.EndIf
+
+				'get all labor and outside operations
+					F.Intrinsic.String.Concat("select SEQ,PART,LMO,DATE_COMPLETED,DATE_START,UNITS_OPEN,UNITS_COMPLETE,HOURS_ACTUAL from V_JOB_OPERATIONS where  (LMO='L' or LMO='O') and JOB='",V.Local.sJobOp,"'and SUFFIX='",V.Local.sSuffOp,"'  and SEQ<'995000' order by SEQ",V.Local.sLabor2)
+					F.ODBC.Connection!conA.OpenRecordsetRO("rstLabB",V.Local.sLabor2)
+					'if no L/O found
+						F.Intrinsic.Control.If(V.ODBC.conA!rstLabB.EOF,=,True)
+							F.Intrinsic.String.Concat(V.Local.sValue,"*!*",V.Local.sComplete,"*!*",V.local.ival.trim,V.Local.sValue)
+						F.Intrinsic.Control.Else
+							F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLabB.EOF,=,True)
+							'if there is a completed date, set 1
+								F.Intrinsic.Date.Year(V.ODBC.conA!rstLabB.FieldVal!DATE_COMPLETED,V.Local.iYear)
+								F.Intrinsic.Control.If(V.Local.iYear,<>,1900)
+									V.Local.iVal.Set(1)
+								'if no hours posted yet, set 3
+								F.Intrinsic.Control.Else
+									F.Intrinsic.Control.If(V.ODBC.conA!rstLabB.FieldVal!HOURS_ACTUAL,=,0)
+										V.Local.iVal.Set(3)
+								'if hours have been posted, and qty required is complete, set 1
+									F.Intrinsic.Control.Else
+										F.Intrinsic.Control.If(V.ODBC.conA!rstLabB.FieldVal!UNITS_OPEN,=,V.ODBC.conA!rstLabB.FieldVal!UNITS_COMPLETE)
+											V.Local.iVal.Set(1)
+									'if hours have been posted, and qty required is not complete, set 2
+										F.Intrinsic.Control.Else
+											V.Local.iVal.Set(2)
+										F.Intrinsic.Control.EndIf
+									F.Intrinsic.Control.EndIf
+								F.Intrinsic.Control.EndIf
+								V.Local.sComplete.Set(V.ODBC.conA!rstLabB.FieldValTrim!PART)
+							'if there is a status, write the line
+								F.Intrinsic.Control.If(V.Local.iVal,<>,0)
+									F.Intrinsic.String.Concat(V.Local.sValue,"*!*",V.Local.sComplete,"*!*",V.local.ival.trim,V.Local.sValue)
+								F.Intrinsic.Control.EndIf
+							F.ODBC.conA!rstLabB.MoveNext
+							F.Intrinsic.Control.Loop
+						F.Intrinsic.Control.EndIf
+					F.ODBC.conA!rstLabB.Close
+
+		'if no job information is found, go off parent informaiton
+			F.Intrinsic.Control.Else
+			'if it's already completed, set 1
+				F.Intrinsic.Date.Year(V.ODBC.conA!rstOsel.FieldVal!DATE_COMPLETED,V.Local.iYear)
+					F.Intrinsic.Control.If(V.Local.iYear,<>,1900)
+						V.Local.iJHVal.Set(1)
+				'if not started, set 3
+					F.Intrinsic.Control.Else
+						F.Intrinsic.Date.Year(V.ODBC.conA!rstOsel.FieldVal!DATE_START,V.Local.iYear)
+							F.Intrinsic.Control.If(V.Local.iYear,=,1900)
+								V.Local.iJHVal.Set(3)
+						'if it's started and complete, set 1
+							F.Intrinsic.Control.Else
+								F.Intrinsic.Control.If(V.ODBC.conA!rstOsel.FieldVal!UNITS_OPEN,=,V.ODBC.conA!rstOsel.FieldVal!UNITS_COMPLETE)
+									V.Local.iJHVal.Set(1)
+						'if it's started and not complete, s
+								F.Intrinsic.Control.Else
+									V.Local.iJHVal.Set(2)
+								F.Intrinsic.Control.EndIf
+							F.Intrinsic.Control.endif
+					F.Intrinsic.Control.EndIf
+
+				'if there is a status, write the line
+					F.Intrinsic.Control.If(V.Local.iJHVal,<>,0)
+						F.Intrinsic.String.Concat(V.Local.sValue,"*!*",V.Local.sComplete,"*!*",V.Local.iJHVal,V.Local.sValue)
+					F.Intrinsic.Control.EndIf
+
+				F.Intrinsic.Control.EndIf
+			F.ODBC.conA!rstJHb.Close
+
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Concat(V.Local.sValue,"*!*",V.Local.sComplete,"*!*",V.Local.iJHVal,V.Local.sValue)
+		F.Intrinsic.Control.EndIf
+
+
+		F.Intrinsic.Math.Add(V.Local.iRowCt,1,V.Local.iRowCt)
+		F.Intrinsic.String.Concat(V.Local.sFile,"$!$",V.Local.sPart,"*!*",V.Local.sDesc,V.Local.sValue,V.Local.sFile)
+
+	F.ODBC.conA!rstOSel.MoveNext
+	F.Intrinsic.Control.Loop
+F.ODBC.conA!rstOSel.Close
+
+F.Intrinsic.Variable.AddRV("File",V.Local.sFile)
+
+Program.Sub.ParentDetail.End
+
+Program.Sub.Comments.Start
+${$0$}$Status_Report$}$JCT$}$6/13/2012
+${$3$}$0$}$$}$-1$}$-1$}$$}$1/1/1900$}$For Tarus
+${$4$}$0$}$$}$0$}$-1$}$JCT$}$6/28/2011 2:43:36 PM$}$made change to allow selection of specific work order suffix
+${$4$}$0$}$$}$1$}$-1$}$JCT$}$6/14/2012 8:50:32 AM$}$Per quote 3645
+1 sheet for each parent (parent=job/suffix with part beginnig with 3 alpha characters.
+Detail on sheet will be all Job/Suffix/Parts after the parent, before next parent in sequence
+Program.Sub.Comments.End
+
