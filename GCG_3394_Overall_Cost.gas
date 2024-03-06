@@ -1,0 +1,1234 @@
+Program.Sub.ScreenSU.Start
+gui.Form1..create
+gui.Form1..caption("Overall Cost Report")
+gui.Form1..size(5040,3840)
+gui.Form1..position(0,0)
+gui.Form1..event(unload,End)
+gui.Form1..alwaysontop(False)
+gui.Form1..fontname("Arial")
+gui.Form1..fontsize(8)
+gui.Form1..forecolor(0)
+gui.Form1..fontstyle(,,,,)
+gui.Form1..BackColor(-2147483633)
+gui.Form1..controlbox(True)
+gui.Form1..maxbutton(True)
+gui.Form1..minbutton(True)
+gui.Form1..mousepointer(0)
+gui.Form1..moveable(True)
+gui.Form1..sizeable(True)
+gui.Form1..ShowInTaskBar(True)
+gui.Form1..titlebar(True)
+gui.Form1.frame1.create(frame)
+gui.Form1.frame1.caption("Select Work Order")
+gui.Form1.frame1.size(4425,2205)
+gui.Form1.frame1.position(185,200)
+gui.Form1.frame1.visible(True)
+gui.Form1.frame1.fontname("Arial")
+gui.Form1.frame1.fontsize(8)
+gui.Form1.txtJob.create(textbox,"",True,1035,300,0,440,700,True,0,Arial,8,-2147483643,1)
+gui.Form1.txtJob.parent("frame1")
+gui.Form1.cmdbrws.create(button)
+gui.Form1.cmdbrws.caption("^")
+gui.Form1.cmdbrws.visible(True)
+gui.Form1.cmdbrws.size(300,300)
+gui.Form1.cmdbrws.zorder(0)
+gui.Form1.cmdbrws.position(3595,700)
+gui.Form1.cmdbrws.enabled(True)
+gui.Form1.cmdbrws.parent("frame1")
+gui.Form1.cmdbrws.fontname("Arial")
+gui.Form1.cmdbrws.fontsize(8)
+gui.Form1.cmdbrws.event(click,cmdbrws_click)
+gui.Form1.cmdOK.create(button)
+gui.Form1.cmdOK.caption("SELECT")
+gui.Form1.cmdOK.visible(True)
+gui.Form1.cmdOK.size(855,375)
+gui.Form1.cmdOK.zorder(0)
+gui.Form1.cmdOK.position(300,2680)
+gui.Form1.cmdOK.enabled(True)
+gui.Form1.cmdOK.fontname("Arial")
+gui.Form1.cmdOK.fontsize(8)
+gui.Form1.cmdOK.event(click,cmdok_click)
+gui.Form1.cmdCNCL.create(button)
+gui.Form1.cmdCNCL.caption("CANCEL")
+gui.Form1.cmdCNCL.visible(True)
+gui.Form1.cmdCNCL.size(855,375)
+gui.Form1.cmdCNCL.zorder(0)
+gui.Form1.cmdCNCL.position(3600,2680)
+gui.Form1.cmdCNCL.enabled(True)
+gui.Form1.cmdCNCL.fontname("Arial")
+gui.Form1.cmdCNCL.fontsize(8)
+gui.Form1.cmdCNCL.event(click,End)
+gui.Form1.lbl1.create(label,"Job",True,900,255,1,440,500,True,0,Arial,8,-2147483633,0)
+gui.Form1.lbl1.parent("frame1")
+gui.Form1.lbl2.create(label,"Job-Suffix",True,3105,255,1,440,1135,True,0,Arial,8,-2147483633,0)
+gui.Form1.lbl2.parent("frame1")
+gui.Form1.dropdownlist1.create(dropdownlist)
+gui.Form1.dropdownlist1.visible(True)
+gui.Form1.dropdownlist1.size(3465,330)
+gui.Form1.dropdownlist1.zorder(0)
+gui.Form1.dropdownlist1.position(445,1365)
+gui.Form1.dropdownlist1.enabled(True)
+gui.Form1.dropdownlist1.parent("frame1")
+gui.Form1.dropdownlist1.fontname("Arial")
+gui.Form1.dropdownlist1.fontsize(8)
+gui.Form1.txtDesc.create(textbox,"",True,2145,300,0,1460,700,True,0,Arial,8,-2147483643,1)
+gui.Form1.txtDesc.parent("frame1")
+gui.Form1.lbl3.create(label,"Description",True,1935,255,1,1490,500,True,0,Arial,8,-2147483633,0)
+gui.Form1.lbl3.parent("frame1")
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Variable.Global.Count.Declare(Long,0)
+Variable.Global.sPage1.Declare(String)
+Variable.Global.lWaitct.Declare(Long,0)
+
+Variable.UDT.JobParent.Define("Job",String,Job)
+Variable.UDT.JobParent.Define("Suffix",String,Suffix)
+Variable.UDT.JobParent.Define("Part",String,Part)
+Variable.UDT.JobParent.Define("Description",String,Description)
+Variable.UDT.JobParent.Define("Date_Opened",Date,Date_Opened)
+Variable.UDT.JobParent.Define("Date_Closed",Date,Date_Closed)
+Variable.UDT.JobParent.Define("Qty_Order",Float,Qty_Order)
+Variable.UDT.JobParent.Define("Qty_Completed",Float,Qty_Completed)
+Variable.uGlobal.uJobParent.Declare("JobParent")
+
+Variable.UDT.JobChild.Define("ParentJob",String)
+Variable.UDT.JobChild.Define("ParentSuffix",String)
+Variable.UDT.JobChild.Define("Job",String,Job)
+Variable.UDT.JobChild.Define("Suffix",String,Suffix)
+Variable.UDT.JobChild.Define("Part",String,Part)
+Variable.UDT.JobChild.Define("Description",String,Description)
+Variable.UDT.JobChild.Define("Units_Complete",Float,Units_Complete)
+Variable.UDT.JobChild.Define("Units_Open",Float,Units_Open)
+Variable.uGlobal.uJobChild.Declare("JobChild")
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+
+
+
+V.Local.sfile.Declare(String)
+V.Local.bHere.Declare(Boolean)
+V.Local.iHndl.Declare(Long)
+
+F.ODBC.Connection!conA.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+'delete an existing file
+F.Intrinsic.String.Concat(V.System.Temp,"\OC.txt",V.Local.sFile)
+	F.Intrinsic.File.Exists(V.Local.sfile,V.Local.bHere)
+		F.Intrinsic.Control.If(V.Local.bHere,=,True)
+			F.Intrinsic.File.DeleteFile(V.Local.sfile)
+		F.Intrinsic.Control.EndIf
+
+Gui.Form1..Show
+
+
+Program.Sub.Main.End
+
+Program.Sub.End.Start
+
+F.ODBC.Connection!conA.Close
+F.Intrinsic.Control.End
+
+Program.Sub.End.End
+
+program.sub.cmdok_click.start
+
+Gui.Form1.cmdbrws.Enabled(false)
+Gui.Form1.cmdCNCL.Enabled(false)
+Gui.Form1.cmdOK.Enabled(false)
+
+V.Local.sFileLoc.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.sValue.Declare(String)
+V.Local.sFilename.Declare(String)
+V.Local.sSeq.Declare(String)
+V.Local.sSheet.Declare(String)
+V.Local.sArray.Declare(String)
+V.Local.sShArray.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sDesc.Declare(String)
+V.Local.sLhrs.Declare(String)
+V.Local.spUr.Declare(String)
+V.Local.sAmt.Declare(String)
+V.Local.sHrsAct.Declare(String)
+V.Local.sOutHrs.Declare(String)
+V.Local.sFhours.Declare(String)
+V.Local.fMisc.Declare(Float)
+V.Local.fCost.Declare(Float)
+V.Local.fHours.Declare(Float)
+V.Local.fPur.Declare(Float)
+V.Local.fJQ.Declare(Float)
+V.Local.fAmt.Declare(Float)
+V.Local.fOutHrs.Declare(Float)
+V.Local.funit.Declare(Float)
+V.Local.fwchours.Declare(Float)
+V.Local.fjobQty.Declare(Float)
+V.Local.sJH.Declare(String)
+V.Local.sJHb.Declare(String)
+V.Local.sOSelect.Declare(String)
+V.Local.sWCSel.Declare(String)
+V.Local.sLabor.Declare(String)
+V.Local.sCode.Declare(String)
+V.Local.sHours.Declare(String)
+V.Local.sCol.Declare(String)
+V.Local.sTotal.Declare(String)
+V.Local.sLBS.Declare(String)
+V.Local.sWait.Declare(String)
+V.Local.sMat.Declare(String)
+V.Local.sLab.Declare(String)
+V.Local.sTtotal.Declare(String)
+V.Local.sLMO.Declare(String)
+V.Local.sMiscL.Declare(String)
+V.Local.sMiscP.Declare(String)
+V.Local.sMLhrs.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sHeadingA.Declare(String)
+V.Local.sHeadingB.Declare(String)
+V.Local.sHeadingB2.Declare(String)
+V.Local.sFooterB.Declare(String)
+V.Local.sFooterA.Declare(String)
+V.Local.sFooterC.Declare(String)
+V.Local.sPage1.Declare(String)
+V.Local.sWCArray.Declare(String)
+V.Local.bExists.Declare(Boolean)
+V.Local.bSheet1.Declare(Boolean)
+V.Local.lRowCt.Declare(Long)
+V.Local.lRoTot.Declare(Long)
+V.Local.lRate.Declare(Long)
+V.Local.lColCt.Declare(Long)
+V.Local.lA.Declare(Long)
+V.Local.lTotal.Declare(Long)
+V.Local.iHndl.Declare(Long)
+V.Local.lWC.Declare(Long)
+V.Local.lC.Declare(Long)
+V.Local.lSheetcount.Declare(Long)
+V.Local.lArrayCt.Declare(Long)
+V.Local.iFor.Declare(Long)
+V.Local.sJobRet.Declare(String)
+V.Local.iForJob.Declare(String)
+
+'delete an existing file
+F.Intrinsic.String.Concat(V.System.Temp,"\Costing.xls",V.Local.sFileLoc)
+F.Intrinsic.File.Exists(V.Local.sFileLoc,V.Local.bExists)
+	F.Intrinsic.Control.If(V.Local.bExists,=,True)
+		F.Intrinsic.File.DeleteFile(V.Local.sFileLoc)
+	F.Intrinsic.Control.EndIf
+
+Gui.Form1..Visible(false)
+F.Intrinsic.UI.InvokeWaitDialog("","OverallCost Report")
+
+'preset column count
+V.Local.lColCt.Set(6)
+'split text from dropdown, redim to 3 element
+F.Intrinsic.String.Split(V.Screen.Form1!dropdownlist1.Text,"-",V.Local.sRet)
+	V.Local.sRet.RedimPreserve(0,3)
+
+'-----------------------------------------------------------------------------------
+F.Intrinsic.File.GetHandle(V.Local.iHndl)
+'open file for writing lines as they come
+F.Intrinsic.String.Concat(V.System.Temp,"\OC.txt",V.Local.sFilename)
+
+'-----------------------------------------------------------------------------------
+'material heading
+V.Local.sMat.Set("*!**!*Material")
+'labor heading
+V.Local.sLab.Set("*!**!**!**!**!*Labor")
+'additional headings
+V.Local.sHeadingA.Set("$!$$!$*!**!**!*MATERIAL*!**!**!**!*LABOR$!$")
+V.Local.sHeadingB.Set("*!**!*RAW*!*PART WEIGHT*!*PURCHASE PART*!*OUTSIDE SVC.*!*SAW*!*WATERJET*!*WELD SHOP*!*LARGE MILL*!*SMALL MILL*!*GRINDING*!*PREP*!*PAINT SHOP*!*REWORK*!*ELEC*!*SUB-ASSY*!*ASSEMBLY*!*SHIPPING*!*INSTALLATION*!*9$!$")
+V.Local.sHeadingB2.Set("PART#*!*DESCRIPTION*!*MATERIAL ($)*!*(LBS)*!*($)*!*($)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*(HRS)*!*9$!$")
+F.Intrinsic.String.Concat(V.Local.sHeadingB,V.Local.sHeadingB2,V.Local.sHeadingB)
+'one footer line
+V.Local.sFooterB.Set("*!*RATE*!**!**!**!*")
+'split the finite list of workcenters
+F.Intrinsic.String.Split("SAW*!*WJ*!*WELD*!*LRGM*!*SMLM*!*GRND*!*PREP*!*PNT*!*REWK*!*ELEC*!*ASYS*!*ASSY*!*SHIP*!*","*!*",V.Local.sWCArray)
+'for each wc
+F.Intrinsic.Control.For(V.Local.lWC,V.Local.sWCArray.LBound,V.Local.sWCArray.UBound,1)
+'reset values to 0
+	V.Local.fCost.Set(0)
+'get cost for workcenter
+	F.Intrinsic.String.Concat("select STANDARD_COST,STANDARD_OVHD,FIXED_OVHD  from WORKCENTERS where WC_DEPT='",V.Local.sWCArray(V.Local.lWC),"'and WC_DEPT <>'' ",V.Local.sWCSel)
+	F.ODBC.Connection!conA.OpenRecordsetRO("rstWC","select Wc_Dept,(Standard_Cost+Standard_Ovhd+Fixed_Ovhd) as Cost  from Workcenters where  WC_Dept <>'' order by WC_Dept")
+		F.Intrinsic.Control.If(V.ODBC.conA!rstWC.EOF,=,False)
+			V.Local.fCost.Set(V.ODBC.conA!rstWC.FieldVal!COST)
+		F.Intrinsic.Control.Else
+			V.Local.fCost.Set(0)
+		F.Intrinsic.Control.EndIf
+	F.ODBC.conA!rstWC.Close
+	F.Intrinsic.String.Concat(V.Local.sFooterB,"*!*",V.Local.fCost,V.Local.sFooterB)
+	F.Intrinsic.Math.Add(V.Local.lColCt,1,V.Local.lColCt)
+F.Intrinsic.Control.Next(V.Local.lWC)
+'concat footer. The '9' is in a hidden column used for formatting
+F.Intrinsic.String.Concat(V.Local.sFooterB,"*!*9",V.Local.sFooterB)
+F.Intrinsic.Math.Sub(V.Local.lColCt,1,V.Local.lColCt)
+F.Intrinsic.Control.CallSub(Getjobs)
+
+'get count of job/suffix
+F.Intrinsic.Math.Add(V.uGlobal.uJobParent!Job.UBound,1,V.Local.lC)
+'V.Local.lC.Set(V.uGlobal.uJobParent!Job.UBound)
+'----------------------------------------------------------------------------------------------------------------------------------------------------------
+'for each parent job
+F.Intrinsic.Control.For(V.Local.iFor,V.uGlobal.uJobParent!Job.LBound,V.uGlobal.uJobParent!Job.UBound,1)
+'starting row
+	V.Local.lRowCt.Set(7)
+'reset hours variables to blank or 0
+	V.Local.sFooterA.Set("*!*")
+	V.Local.sFooterC.Set("*!*")
+'	V.Local.lRowCt.Set(7)
+	V.Local.sValue.Set("")
+'for wait dialog
+	F.Intrinsic.Math.Add(V.global.lwaitct,1,V.global.lwaitct)
+	F.Intrinsic.Math.Add(V.Local.lSheetcount,1,V.Local.lSheetcount)
+	F.Intrinsic.String.Concat("Creating Sheet ",V.Local.lSheetcount," of ",V.Local.lC,V.Local.sWait)
+	F.Intrinsic.Control.If(V.Local.lC,=,1)
+		F.Intrinsic.UI.ChangeWaitStatus(V.Local.sWait,V.Local.lSheetcount,1,2)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.UI.ChangeWaitStatus(V.Local.sWait,V.Local.lSheetcount,1,V.Local.lC)
+	F.Intrinsic.Control.EndIf
+'write heading information
+	F.Intrinsic.String.Concat(V.Local.sHeadingA,V.Ambient.NewLine,V.Local.sHeadingB,V.Ambient.NewLine,V.Local.sValue)
+	F.Intrinsic.String.Concat(V.Local.sFile,V.Local.sValue,V.Local.sFile)
+	F.Intrinsic.Math.Add(V.Global.Count,1,V.Global.Count)
+
+'remove characters from the part description (excel doesn't like them for sheet names)
+	F.Intrinsic.String.StripCharacters(V.uGlobal.uJobParent(v.Local.iFor)!Description,V.Local.sSheet)
+'split the existing array
+	F.Intrinsic.String.Split(V.Local.sArray,"*!*",V.Local.sShArray)
+'sort the array
+	F.Intrinsic.String.SortAsc(V.Local.sShArray,V.Local.sShArray)
+'for each array element
+	F.Intrinsic.Control.For(V.Local.lArrayCt,V.Local.sShArray.LBound,V.Local.sShArray.UBound,1)
+'if the current description is already in the array, add a "^" to the name
+		F.Intrinsic.Control.If(V.Local.sSheet,=,V.Local.sShArray(v.Local.lArrayCt))
+			F.Intrinsic.String.Concat(V.Local.sSheet,"^",V.Local.sSheet)
+		F.Intrinsic.Control.EndIf
+'move to the next name on the list
+	F.Intrinsic.Control.Next(V.Local.lArrayCt)
+'add the newest name to the array
+	F.Intrinsic.Control.If(V.Local.lC,=,0)
+		V.Local.sArray.Set(V.Local.sSheet)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Concat(V.Local.sArray,"*!*",V.Local.sSheet,V.Local.sArray)
+	F.Intrinsic.Control.EndIf
+'-----------------------------------------------------------------------------------------------------------------------------------------------------------
+'get the Parent's material and labor
+	F.Intrinsic.Control.CallSub(Parentdetail,"Job",V.uGlobal.uJobParent(v.Local.iFor)!Job,"Suffix",V.uGlobal.uJobParent(v.Local.iFor)!Suffix,"For",V.Local.iFor)
+	F.Intrinsic.Math.Add(V.Local.lRowCt,V.Args.RowCt,V.Local.lRowCt)
+	F.Intrinsic.String.Concat(V.Local.sFile,V.Args.File,V.Local.sFile)
+'__________________________________________________________________________________________________________________________
+'F.Intrinsic.Control.Label("NOCHILD")
+	F.Intrinsic.Control.CallSub(Misclo,"Job",V.uGlobal.uJobParent(v.Local.iFor)!Job,"Suffix",V.uGlobal.uJobParent(v.Local.iFor)!Suffix,"For",V.Local.iFor,"Parent",False)
+
+'write the misc labor line.  The '9' is in a hidden comma used for formatting
+	F.Intrinsic.String.Concat(V.Local.sFile,"$!$*!*MISCELLANEOUS LABOR*!**!**!**!*",V.Args.OutHrs,V.Args.MiscL,"*!*9",V.Local.sFile)
+	F.Intrinsic.Math.Add(V.Local.lRowCt,1,V.Local.lRowCt)
+'		F.Intrinsic.File.WriteLine(V.Local.iHndl,V.Local.sFile)
+'-----------------------------------------------------------------------------------------------------------------------------------------------------------
+	'increase counts
+		F.Intrinsic.Math.Add(V.Local.lRowCt,1,V.Local.lRoTot)
+		F.Intrinsic.Math.Add(V.Local.lRowct,2,V.Local.lRate)
+		F.Intrinsic.Math.Add(V.Local.lRowCt,3,V.Local.lTotal)
+	'2-5 are the "Material" cost columns
+		F.Intrinsic.Control.For(V.Local.lA,2,5,1)
+			F.Intrinsic.String.OrdinalToColumn(V.Local.lA,V.Local.sCol)
+			F.Intrinsic.String.Concat(V.Local.sFooterA,"*!*","=SUM(",V.Local.sCol,"6:",V.Local.sCol,V.Local.lRowCt,")",V.Local.sFooterA)
+			F.Intrinsic.String.Concat(V.Local.sFooterC,"*!*","=(",V.Local.sCol,V.Local.lRoTot,")",V.Local.sFooterC)
+		F.Intrinsic.Control.Next(V.Local.lA)
+	'6 to the last are the "Labor" hours columns
+		F.Intrinsic.Control.For(V.Local.lA,6,V.Local.lColCt,1)
+			F.Intrinsic.String.OrdinalToColumn(V.Local.lA,V.Local.sCol)
+			F.Intrinsic.String.Concat(V.Local.sFooterA,"*!*","=SUM(",V.Local.sCol,"6:",V.Local.sCol,V.Local.lRowCt,")",V.Local.sFooterA)
+			F.Intrinsic.String.Concat(V.Local.sFooterC,"*!*","=(",V.Local.sCol,V.Local.lRoTot,"*",V.Local.sCol,V.Local.lRate,")",V.Local.sFooterC)
+		F.Intrinsic.Control.Next(V.Local.lA)
+	'add the 9 to the end of the line for the additional footers
+		F.Intrinsic.String.Concat(V.Local.sFooterA,"*!*9",V.Local.sFooterA)
+		F.Intrinsic.String.Concat(V.Local.sFooterC,"*!*9",V.Local.sFooterC)
+	'concatenate the Total line
+		F.Intrinsic.String.Concat("TARUS TOTAL*!*=SUM(C",V.Local.lTotal,":",V.Local.sCol,V.Local.lTotal,")-D",V.Local.lTotal,"*!**!**!**!**!**!**!**!**!**!**!**!**!**!**!**!**!**!**!*9",V.Local.sTotal)
+	'write the footers
+		F.Intrinsic.String.Concat("$!$$!$",V.Local.sFooterA,"$!$",V.Local.sFooterB,"$!$",V.Local.sFooterC,"$!$",V.Local.sTotal,V.Local.sValue)
+		F.Intrinsic.String.Concat(V.Local.sFile,V.Local.sValue,V.Local.sFile)
+
+	'the wait count is for the wait dialog
+		F.Intrinsic.Math.Add(V.Global.lWaitct,1,V.Global.lWaitct)
+	'-----------------------------------------------------------------------------------------------------------------------------------------------------------
+		V.Local.bSheet1.Set(False)
+	'if not the last sheet
+		F.Intrinsic.Control.If(V.Local.lSheetcount,<>,V.Local.lC)
+			F.Intrinsic.String.Concat(V.Local.sFile,"&^&",V.Local.sFile)
+		F.Intrinsic.Control.endif
+F.Intrinsic.Control.Next(V.Local.iFor)
+'add parent labor to fnal misc line
+
+'for each parent job
+'get description for BOM Summary sheet
+F.Intrinsic.Control.For(V.Local.iFor,V.uGlobal.uJobParent!Job.LBound,V.uGlobal.uJobParent!Job.UBound,1)
+	F.Intrinsic.String.Concat(V.Local.sTtotal,"$!$",V.uGlobal.uJobParent(v.Local.iFor)!Description,V.Local.sTtotal)
+F.Intrinsic.Control.Next(V.Local.iFor)
+	F.Intrinsic.String.Concat("$!$$!$BOM Summary",V.Local.sTtotal,V.Local.sTtotal)
+	F.Intrinsic.String.Concat(V.Local.sTtotal,"&^&",V.Local.sFile,V.Local.sFile)
+
+'-----------------------------------------------------------------------------------------------------------------------------------------------------------
+F.Intrinsic.File.String2File(V.Local.sFilename,V.Local.sFile)
+F.Intrinsic.String.Concat("BOM Summary*!*",V.Local.sArray,V.Local.sArray)
+
+'if there is at least 1 sheet
+F.Intrinsic.Control.If(V.Local.lC,>,0)
+	F.Intrinsic.Control.CallSub(Create_sheets,"Hndl",V.Local.iHndl,"lC",V.Local.lC,"Sheets",V.Local.sArray)
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.CallSub(End)
+F.Intrinsic.Control.EndIf
+
+
+program.sub.cmdok_click.end
+
+program.sub.cmdbrws_click.start
+
+V.Local.sTitles.Declare(String)
+V.Local.iWidths.Declare(Long)
+V.Local.sRet.Declare(String)
+V.Local.sJob.Declare(String)
+V.Local.sSel.Declare(String)
+
+F.Intrinsic.String.Split("WORK ORDER*!*SUFFIX*!*PART*!*DESCRIPTION","*!*",V.Local.sTitles)
+F.Intrinsic.String.Split("2000*!*1000*!*3000*!*4000","*!*",V.Local.iWidths)
+
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+Gui.Form1.dropdownlist1.ClearItems
+'04/20/12 -- jct
+'for browser, get all job-suffix where suffix='000'
+V.Local.sSel.Set("select distinct V_JOB_HEADER.JOB, V_JOB_HEADER.SUFFIX,PART,DESCRIPTION,USER_10 ")
+F.Intrinsic.String.Concat(V.Local.sSel," from V_JOB_HEADER inner join WO_USER_FLDS on V_JOB_HEADER.JOB= WO_USER_FLDS.JOB and V_JOB_HEADER.SUFFIX=WO_USER_FLDS.SUFFIX ",V.Local.sSel)
+F.Intrinsic.String.Concat(V.Local.sSel," where Suffix='000' order by Job, Part",V.Local.sSel)
+F.Intrinsic.UI.Browser("Select Work Order","conA",V.Local.sSel,V.Local.sTitles,V.Local.iWidths,10000,10000,V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+		Gui.Form1.txtJob.Text(V.Local.sRet(0).Trim)
+		Gui.Form1.txtDesc.Text(V.Local.sRet(2).Trim)
+	'add option to select just level 1&2 jobs
+	Gui.Form1.dropdownlist1.AddItem("Level 1 & 2 Only")
+
+	'get job information for dropdown for single job selection
+	V.Local.sJob.Set(V.Screen.Form1!txtJob.Text)
+	F.Intrinsic.String.Concat("select distinct rtrim(JOB)+' - '+rtrim(SUFFIX)+' - '+rtrim(PART)+' - '+rtrim(DESCRIPTION)  as COMBO from V_JOB_HEADER where JOB='",V.Local.sJob.Trim,"' ",V.Local.sSel)
+	F.ODBC.Connection!conA.OpenRecordsetRO("rstA",V.Local.sSel)
+		F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstA.EOF,=,True)
+			Gui.Form1.dropdownlist1.AddItem(V.ODBC.conA!rstA.FieldVal!COMBO)
+	F.ODBC.conA!rstA.MoveNext
+		F.Intrinsic.Control.Loop
+	F.ODBC.conA!rstA.Close
+
+	'add option for "all" jobs in dropdown
+	Gui.Form1.dropdownlist1.AddItem("ALL")
+
+
+	'set option to level 1&2 jobs
+	Gui.Form1.dropdownlist1.Text("Level 1 & 2 Only")
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.CallSub(End)
+F.Intrinsic.Control.EndIf
+
+program.sub.cmdbrws_click.end
+
+Program.Sub.Create_Sheets.Start
+
+V.Local.sFile.Declare(String)
+V.Local.sTemplate.Declare(String)
+V.Local.sExport.Declare(String)
+V.Local.svalue.Declare(String)
+V.Local.sNames.Declare(String)
+V.Local.sSheet.Declare(String)
+V.Local.sCell.Declare(String)
+V.Local.sWait.Declare(String)
+V.Local.sLastRow.Declare(String)
+V.Local.sHeadingA.Declare(String)
+
+V.Local.lTotal.Declare(Long)
+V.Local.lCount.declare(Long)
+V.Local.lSheet.Declare(Long)
+V.Local.iHndl.Declare(Long)
+V.Local.lRows.Declare(Long)
+V.Local.lRowCount.Declare(Long)
+V.Local.lCol.Declare(Long)
+V.Local.lColCount.Declare(Long)
+V.Local.lStart.Declare(Long)
+V.Local.sBlankSheet.Declare(String)
+V.Local.iSheetCount.Declare(Long)
+V.Local.bOO.Declare(Boolean)
+V.Local.bExists.Declare(Boolean)
+V.Local.iFor.Declare(Long)
+V.Local.sWkSht.Declare(String)
+V.Local.sBlankCopy.Declare(String)
+V.Local.sTemplateCopy.Declare(String)
+V.Local.sShArray.Declare(String)
+V.Local.lArrayCt.Declare(Long)
+V.Local.sAst.Declare(String)
+
+V.Local.iHndl.Set(V.Args.Hndl)
+'templates are pre formatted with conditions
+F.Intrinsic.String.Concat(V.Caller.FilesDir,"\Templates\Costing_Template_1.xls",V.Local.sBlankCopy)
+F.Intrinsic.String.Concat(V.System.Temp,"\OC.txt",V.Local.sFile)
+'delete existing file
+F.Intrinsic.String.Concat(V.System.Temp,"\Costing_Copy.xls",V.Local.sExport)
+	F.Intrinsic.File.Exists(V.Local.sExport,V.Local.bExists)
+		F.Intrinsic.Control.If(V.Local.bExists,=,True)
+			F.Intrinsic.File.DeleteFile(V.Local.sExport)
+		F.Intrinsic.Control.EndIf
+'if the wrkbk will be more than 30 sheets, needed to have a blank to accomodate
+F.Intrinsic.String.Concat(V.System.Temp,"\Costing_Template30.xls",V.Local.sTemplateCopy)
+	F.Intrinsic.File.Exists(V.Local.sTemplateCopy,V.Local.bExists)
+		F.Intrinsic.Control.If(V.Local.bExists,=,True)
+			F.Intrinsic.File.DeleteFile(V.Local.sTemplateCopy)
+		F.Intrinsic.Control.EndIf
+'sheet count passed
+V.Local.iSheetCount.Set(V.Args.lC)
+'add sheet fro BOM Summary page
+F.Intrinsic.Math.Add(V.Local.iSheetCount,1,V.Local.iSheetCount)
+'copy the template, so it doesn't write to the template itself
+F.Intrinsic.Control.If(V.Local.iSheetCount,<=,30)
+	F.Intrinsic.String.Concat(V.Caller.FilesDir,"\Templates\Costing_Template_",V.Local.iSheetCount,".xls",V.Local.sTemplate)
+	F.Intrinsic.File.CopyFile(V.Local.sTemplate,V.Local.sTemplateCopy)
+	V.Local.sTemplate.Set(V.Local.sTemplateCopy)
+F.Intrinsic.Control.Else
+'if more than 30 sheets, will need to add sheets to the wkbk
+	F.Intrinsic.String.Concat(V.Caller.FilesDir,"\Templates\Costing_Template_30.xls",V.Local.sTemplate)
+	F.Intrinsic.File.CopyFile(V.Local.sTemplate,V.Local.sTemplateCopy)
+	V.Local.sTemplate.Set(V.Local.sTemplateCopy)
+'open excel
+	F.Automation.MSExcel.CreateAppObject("Excel")
+	F.Automation.MSExcel.OpenWorkbook("Excel",V.Local.sExport,V.Local.sTemplateCopy)
+'for all over 30, add another sheet to the template copy
+		F.Intrinsic.Control.For(V.Local.iFor,31,V.Local.iSheetCount,1)
+			F.Intrinsic.String.Concat("Sheet",V.Local.iFor,V.Local.sWkSht)
+			Function.Automation.MSExcel.CreateWorksheet(V.Local.sExport,V.Local.sWkSht,V.Local.sWkSht)
+			F.Automation.Generic.DestroyObject(V.Local.sWkSht)
+		F.Intrinsic.Control.Next(V.Local.iFor)
+	F.Automation.MSExcel.SaveWorkbook(V.Local.sExport)
+	F.Automation.Generic.DestroyObject(V.Local.sExport)
+	F.Automation.Generic.DestroyObject("Excel")
+F.Intrinsic.Control.EndIf
+'create the spreadsheet from the txt
+F.Intrinsic.File.File2String(V.Local.sFile,V.Local.svalue)
+	F.Automation.MSexcel.WriteSpreadsheet(V.Local.sExport,V.Local.sTemplate,V.Local.svalue.Trim,True)
+'sheet names have been passed
+V.Local.sNames.Set(V.Args.Sheets)
+'split the string of names
+F.Intrinsic.String.Split(V.Local.sNames,"*!*",V.Local.sNames)
+'open the wrkbk
+F.Automation.MSExcel.CreateAppObject("Excel")
+F.Automation.MSExcel.OpenWorkbook("Excel",V.Local.sExport,V.Local.sExport)
+
+V.Local.lStart.Set(3)
+V.Local.lSheet.Set(2)
+
+F.Automation.MSExcel.OpenWorksheet(V.Local.sExport,"Sheet1",1)
+'for each sheet
+F.Intrinsic.Control.For(V.Local.lSheet,2,V.Local.sNames.UBound,1)
+	F.Intrinsic.Math.Add(V.Local.lStart,1,V.Local.lStart)
+'get sheet number
+	F.Intrinsic.String.Concat("Sheet",V.Local.lSheet,V.Local.sSheet)
+'open that sheet
+	F.Automation.MSExcel.OpenWorksheet(V.Local.sExport,V.Local.sSheet,V.Local.lSheet)
+'get a row count
+	F.Automation.MSExcel.RowCount(V.Local.sSheet,V.Local.lRows)
+'for each row
+	F.Intrinsic.Control.For(V.Local.lRowCount,6,V.Local.lRows,1)
+	'for wait count
+		F.Intrinsic.String.Concat("Formatting Sheet ",V.Local.lSheet," of ",V.Local.sNames.UBound,V.Local.sWait)
+		F.Intrinsic.UI.ChangeWaitStatus(V.Local.sWait,V.Local.lRowCount,5,V.Local.lRows)
+	'read the first cell on the row
+		F.Automation.MSExcel.ReadCell(V.Local.sSheet,V.Local.lRowCount,1,V.Local.sCell)
+	'if it's the Total row
+		F.Intrinsic.Control.If(V.Local.sCell,=,"TARUS TOTAL")
+		'format the Total value
+			F.Automation.MSExcel.ReadCell(V.Local.sSheet,V.Local.lRowCount,2,V.Local.sCell)
+			F.Intrinsic.String.Format(V.Local.sCell,"0.00",V.Local.sCell)
+			F.Automation.MSExcel.WriteCell("Sheet1",V.Local.lStart,2,V.Local.sCell)
+		F.Intrinsic.Control.EndIf
+'move to the next row
+	F.Intrinsic.Control.Next(V.Local.lRowCount)
+	
+	'for each column on the row
+'		F.Intrinsic.Control.For(V.Local.lColCount,4,30,1)
+'		'read the cell value
+'			F.Automation.MSExcel.ReadCell(V.Local.sSheet,V.Local.lRowCount,V.Local.lColCount,V.Local.sCell)
+'		'if the cell is blank
+'			F.Intrinsic.Control.If(V.Local.sCell,=,"")
+'				F.Intrinsic.Math.Sub(V.Local.lColCount,1,V.Local.lCol)
+'				F.Automation.MSExcel.ReadCell(V.Local.sSheet,V.Local.lRowCount,V.Local.lCol,V.Local.sCell)
+'				F.Automation.MSExcel.WriteCell(V.Local.sSheet,V.Local.lRowCount,V.Local.lCol,V.Local.sCell)
+''				F.Intrinsic.Control.Next(V.Local.lRowCount)
+''			F.Intrinsic.Control.Else
+'			F.Intrinsic.Control.EndIf
+'		F.Intrinsic.Control.Next(V.Local.lColCount)
+'			F.Intrinsic.Control.EndIf
+	'these are for the headings
+'		F.Automation.MSExcel.WriteCell(V.Local.sSheet,3,3,"MATERIAL")
+'		F.Automation.MSExcel.WriteCell(V.Local.sSheet,3,7,"LABOR")
+		F.Automation.MSExcel.WriteCell(V.Local.sSheet,2,1,V.Local.sNames(v.Local.lSheet))
+	'rename the worksheet to the Part description
+		Function.Automation.MSExcel.NameWorksheet(V.Local.sSheet,V.Local.sNames(v.Local.lSheet))
+		F.Automation.Generic.DestroyObject(V.Local.sSheet)
+F.Intrinsic.Control.Next(V.Local.lSheet)
+'for first page BOM summar, write the formula that will give the total
+F.Intrinsic.String.Concat("=sum(B4:B",V.Local.lStart,")",V.Local.sCell)
+F.Intrinsic.Math.Add(V.Local.lStart,1,V.Local.lStart)
+F.Automation.MSExcel.WriteCell("Sheet1",V.Local.lStart,2,V.Local.sCell)
+V.Local.sCell.Set("Total:")
+F.Automation.MSExcel.WriteCell("Sheet1",V.Local.lStart,1,V.Local.sCell)
+Function.Automation.MSExcel.NameWorksheet("Sheet1","BOM Summary")
+F.Automation.Generic.DestroyObject("Sheet1")
+'save then close out of excel
+F.Automation.MSExcel.SaveWorkbook(V.Local.sExport)
+F.Automation.Generic.DestroyObject(V.Local.sExport)
+F.Automation.Generic.DestroyObject("Excel")
+'close the wait dialog
+F.Intrinsic.UI.CloseWaitDialog
+'open the wkbk to the screen
+F.Intrinsic.Task.ShellExec(V.Local.iHndl,"OPEN",V.Local.sExport,"","",1)
+
+F.Intrinsic.Control.CallSub(End)
+
+
+
+
+Program.Sub.Create_Sheets.End
+
+Program.Sub.GetJobs.Start
+
+V.Local.sRet.Declare(String)
+V.Local.sSel.Declare(String)
+V.Local.sJob.Declare(String)
+V.Local.iFor.Declare(Long)
+V.Local.bIsParent.Declare(Boolean)
+V.Local.sNextSuffix.Declare(String)
+V.Local.iNextSuffix.Declare(Long)
+
+'set job to screen value
+F.Intrinsic.String.Trim(V.Screen.Form1!txtJob.Text,V.Local.sJob)
+'split text from dropdown, redim to 3 element
+F.Intrinsic.String.Split(V.Screen.Form1!dropdownlist1.Text,"-",V.Local.sRet)
+V.Local.sRet.RedimPreserve(0,3)
+
+
+'get additional job information
+V.uGlobal.uJobParent.Redim(-1,-1)
+V.uGlobal.uJobChild.Redim(-1,-1)
+
+'going to collect all jobs, and will filter out later
+F.Intrinsic.String.Concat("select distinct Job, Suffix, Part, Description, Date_Opened, Date_Closed,Qty_Order,Qty_Completed from V_Job_Header where Job='",V.Local.sJob,"' and Suffix >'000' order by Suffix",V.Local.sSel)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstSel",V.Local.sSel)
+	F.Intrinsic.Control.if(V.ODBC.conA!rstSel.EOF,=,False)
+		F.Intrinsic.Variable.LoadUDTFromRecordset("ConA","rstSel","v.uglobal.uJobParent",False)
+	F.Intrinsic.Control.EndIf
+F.ODBC.conA!rstSel.Close
+
+'if no jobs are found, end script
+F.Intrinsic.Control.If(V.uGlobal.uJobParent.UBound,=,-1)
+	F.Intrinsic.Control.CallSub(End)
+F.Intrinsic.Control.EndIf
+
+'pick out jobs that are parents. These will start with 3 alpha characters in the Part Number
+'flag all records
+F.Intrinsic.Variable.UDTFlagAll(V.uGlobal.uJobParent)
+
+'for each job, see if it is a "parent"
+F.Intrinsic.Control.For(V.Local.iFor,V.uGlobal.uJobParent!Job.LBound,V.uGlobal.uJobParent!Job.UBound,1)
+	'get the 3rd character of the Part#
+	F.Intrinsic.String.Mid(V.uGlobal.uJobParent(v.Local.iFor)!Part,3,1,V.Local.sRet)
+	F.Intrinsic.Control.If(V.Local.sRet.UCase,>=,"A")
+	F.Intrinsic.Control.AndIf(V.Local.sRet.UCase,<=,"Z")
+		F.Intrinsic.Variable.UDTMultiUnFlag(V.uGlobal.uJobParent!Job,V.uGlobal.uJobParent(v.Local.iFor)!Job,V.uGlobal.uJobParent!Suffix,V.uGlobal.uJobParent(v.Local.iFor)!Suffix)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iFor)
+F.Intrinsic.Variable.UDTDeleteFlagged(V.uGlobal.uJobParent)
+
+'split text from dropdown, redim to 3 element
+F.Intrinsic.String.Split(V.Screen.Form1!dropdownlist1.Text,"-",V.Local.sRet)
+V.Local.sRet.RedimPreserve(0,3)
+'if only a specific job was selected
+F.Intrinsic.Control.If(V.Local.sRet(0).Trim,<>,"ALL")
+F.Intrinsic.Control.andIf(V.Local.sRet(0).Trim,<>,"Level 1 & 2 Only")
+'flag all records
+	F.Intrinsic.Variable.UDTFlagAll(V.uGlobal.uJobParent)
+'unflag that one parent record
+	F.Intrinsic.Variable.UDTMultiUnFlag(V.uGlobal.uJobParent!Suffix,V.Local.sRet(1).Trim)
+'see which element that suffix is
+	F.Intrinsic.Variable.UDTMultiSeek(V.uGlobal.uJobParent!Suffix,V.Local.sRet(1).trim,V.Local.sNextSuffix)
+	V.Local.iNextSuffix.Set(V.Local.sNextSuffix)
+'if the last job
+	F.Intrinsic.Control.If(V.Local.iNextSuffix,=,V.uGlobal.uJobParent!Job.UBound)
+'else set the "next"to the max
+		V.Local.sNextSuffix.Set("999")
+	F.Intrinsic.Control.Else
+	'get the next element
+		F.Intrinsic.Math.Add(V.Local.sNextSuffix,1,V.Local.sNextSuffix)
+	'set the next suffix to the next parent suffix
+		V.Local.sNextSuffix.Set(V.uGlobal.uJobParent(v.Local.sNextSuffix)!Suffix)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Variable.UDTDeleteFlagged(V.uGlobal.uJobParent)
+
+'get the "child" jobs for that single parent
+'F.Intrinsic.String.Concat("select distinct Job, Suffix, Part, Description, Date_Opened, Date_Closed,Qty_Order,Qty_Completed from V_Job_Header where Job='",V.uGlobal.uJobParent!Job,"' and Suffix>'",V.uGlobal.uJobParent!Suffix,"' and Suffix<'",V.Local.sNextSuffix,"'order by Suffix",V.Local.sSel)
+F.Intrinsic.String.Concat(" select Job, Suffix, Part, Description,  Units_Open, Units_Complete from Job_Operations where Job='",V.uGlobal.uJobParent!Job,"' and Suffix='",V.uGlobal.uJobParent!Suffix,"' and LMO='M' and Seq<'995000' order by Seq",V.Local.sSel)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstSel",V.Local.sSel)
+	F.Intrinsic.Control.if(V.ODBC.conA!rstSel.EOF,=,False)
+		F.Intrinsic.Variable.LoadUDTFromRecordset("ConA","rstSel","v.uglobal.uJobChild",True)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.Variable.UDTMultiSeekSet(V.uGlobal.uJobChild!ParentJob,"",V.uGlobal.uJobChild!ParentJob,V.uGlobal.uJobParent!Job)
+	F.Intrinsic.Variable.UDTMultiSeekSet(V.uGlobal.uJobChild!ParentSuffix,"",V.uGlobal.uJobChild!ParentSuffix,V.uGlobal.uJobParent!Suffix)
+F.ODBC.conA!rstSel.Close
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+'===================================================================================================================
+'if more than a single job is selected:
+'for each parent job/suffix, get the "child" jobs
+F.Intrinsic.Control.For(V.Local.iFor,V.uGlobal.uJobParent!Job.LBound,V.uGlobal.uJobParent!Job.UBound,1)
+	F.Intrinsic.Math.Add(V.Local.iFor,1,V.Local.sNextSuffix)
+	F.Intrinsic.Control.If(V.Local.iFor,=,V.uGlobal.uJobParent!Job.UBound)
+		F.Intrinsic.String.Concat("select Job, Suffix, Part, Description,  Units_Open, Units_Complete from Job_Operations  where Job='",V.uGlobal.uJobParent(V.Local.iFor)!Job,"' and Suffix>'",V.uGlobal.uJobParent(V.Local.iFor)!Suffix,"' order by Suffix",V.Local.sSel)
+	F.Intrinsic.Control.Else
+	'set the next suffix to the next parent suffix
+	V.Local.sNextSuffix.Set(V.uGlobal.uJobParent(v.Local.sNextSuffix)!Suffix)
+		F.Intrinsic.String.Concat("select Job, Suffix, Part, Description,  Units_Open, Units_Complete from Job_Operations  where Job='",V.uGlobal.uJobParent(V.Local.iFor)!Job,"' and Suffix>'",V.uGlobal.uJobParent(V.Local.iFor)!Suffix,"' and Suffix<'",V.Local.sNextSuffix,"'order by Suffix",V.Local.sSel)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.Connection!conA.OpenRecordsetRO("rstSel",V.Local.sSel)
+		F.Intrinsic.Control.if(V.ODBC.conA!rstSel.EOF,=,False)
+			F.Intrinsic.Variable.LoadUDTFromRecordset("ConA","rstSel","v.uglobal.uJobChild",True)
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.Variable.UDTMultiSeekSet(V.uGlobal.uJobChild!ParentJob,"",V.uGlobal.uJobChild!ParentJob,V.uGlobal.uJobParent(v.Local.iFor)!Job)
+		F.Intrinsic.Variable.UDTMultiSeekSet(V.uGlobal.uJobChild!ParentSuffix,"",V.uGlobal.uJobChild!ParentSuffix,V.uGlobal.uJobParent(v.Local.iFor)!Suffix)
+	F.ODBC.conA!rstSel.Close
+F.Intrinsic.Control.Next(V.Local.iFor)
+
+
+
+Program.Sub.GetJobs.End
+
+Program.Sub.ParentDetail.Start
+
+V.Local.sFile.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sDesc.Declare(String)
+V.Local.spUr.Declare(String)
+V.Local.sAmt.Declare(String)
+V.Local.fPur.Declare(Float)
+V.Local.fAmt.Declare(Float)
+V.Local.fjobQty.Declare(Float)
+V.Local.sOSelect.Declare(String)
+V.Local.sLabor.Declare(String)
+V.Local.sCode.Declare(String)
+V.Local.sLBS.Declare(String)
+V.Local.lRowCt.Declare(Long)
+V.Local.sJHb.Declare(String)
+V.Local.SJOBOP.Declare(String)
+V.Local.sSuffop.Declare(String)
+V.Local.fJQ.Declare(Float)
+V.Local.lWC.Declare(Long)
+V.Local.fHours.Declare(Float)
+V.Local.sWCArray.Declare(String)
+V.Local.fwchours.Declare(Float)
+V.Local.sOutHrs.Declare(String)
+V.Local.sHours.Declare(String)
+V.Local.sLhrs.Declare(String)
+V.Local.lRowCt.Set(0)
+
+V.Local.fjobQty.Set(V.uGlobal.uJobParent(v.Args.For)!Qty_Order)
+'split the finite list of workcenters
+F.Intrinsic.String.Split("SAW*!*WJ*!*WELD*!*LRGM*!*SMLM*!*GRND*!*PREP*!*PNT*!*REWK*!*ELEC*!*ASYS*!*ASSY*!*SHIP*!*","*!*",V.Local.sWCArray)
+
+'get Material information for the current job
+F.Intrinsic.String.Concat("select distinct JOB,SUFFIX,SEQ,LMO,PART,DESCRIPTION,DOLLARS_ACTUAL,HOURS_ACTUAL from JOB_OPERATIONS where JOB='",V.Args.Job,"'and SUFFIX='",V.Args.Suffix,"'and ((LMO='M' and SEQ<'995000')) order by SEQ",V.Local.sOSelect)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstOSel",V.Local.sOSelect)
+	F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstOSel.EOF,=,True)
+		V.Local.fAmt.Set(0)
+		V.Local.sAmt.Set("")
+		V.Local.sLBS.Set("")
+		V.Local.sCode.Set("")
+		V.Local.spUr.Set("")
+		V.Local.fPur.Set(0)
+		V.Local.sLhrs.Set("")
+		V.Local.sPart.Set(V.ODBC.conA!rstOSel.FieldValTrim!PART)
+		V.Local.sDesc.Set(V.ODBC.conA!rstOSel.FieldValTrim!DESCRIPTION)
+'________________________________________________________________________________________________________________________
+	'get inventory information for the current part
+		F.Intrinsic.String.Concat("select LBS,CODE_SOURCE from INVENTORY_MST2 where PART='",V.Local.sPart,"'",V.Local.sLabor)
+		F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+			F.Intrinsic.Control.If(V.ODBC.conA!rstLab.EOF,=,False)
+				V.Local.sLBS.Set(V.ODBC.conA!rstLab.FieldvalTrim!LBS)
+				V.Local.sCode.Set(V.ODBC.conA!rstLab.FieldvalTrim!CODE_SOURCE)
+			F.Intrinsic.Control.endif
+			F.Intrinsic.Control.If(V.Local.sLBS,=,"0")
+				V.Local.sLBS.Set("")
+			F.Intrinsic.Control.EndIf
+		F.ODBC.conA!rstLab.Close
+'________________________________________________________________________________________________________________________
+		'if not a purchased part,must be manufactured
+		F.Intrinsic.Control.If(V.Local.sCode,<>,"P")
+			V.Local.spUr.Set("")
+			V.Local.fPur.Set(0)
+		'see if current material/part is a parent to additional parts
+			F.Intrinsic.String.Concat("select JOB,SUFFIX,QTY_ORDER as QTY_COMPLETED,AMT_MATERIAL,PRODUCT_LINE from V_JOB_HEADER where  JOB='",V.Args.Job,"' and PART='",V.Local.sPart,"' ",V.Local.sJHb)
+			F.ODBC.Connection!conA.OpenRecordsetRO("rstJHb",V.Local.sJHb)
+				F.Intrinsic.Control.If(V.ODBC.conA!rstJHb.EOF,=,False)
+					V.Local.SJOBOP.Set(V.ODBC.conA!rstJHb.FieldValTrim!JOB)
+					V.Local.sSuffop.Set(V.ODBC.conA!rstJHb.FieldValTrim!SUFFIX)
+					V.Local.fJQ.Set(V.ODBC.conA!rstJHb.FieldVal!QTY_COMPLETED)
+				'for each workcenter
+					F.Intrinsic.Control.For(V.Local.lWC,V.Local.sWCArray.LBound,V.Local.sWCArray.UBound,1)
+					'default hours to 0
+						V.Local.fHours.Set(0)
+					'if wc<>PREP
+						F.Intrinsic.Control.If(V.Local.sWCArray(V.Local.lWC),<>,"PREP")
+						'if wc="REWRK"
+							F.Intrinsic.Control.If(V.Local.sWCArray(V.Local.lWC),=,"REWK")
+							'get wc hours
+								F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE,UNITS_OPEN  from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and JOB='",V.Local.sJobOP,"'and SUFFIX='",V.Local.sSuffop,"' and SEQ ='998500'  and HOURS_ACTUAL <> 0",V.Local.sLabor)
+								F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+									F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+										V.Local.fwchours.Set(V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL)
+										F.Intrinsic.Control.If(V.Local.fJQ,<>,0)
+											F.Intrinsic.Math.Div(V.Local.fwchours,V.Local.fJQ,V.Local.fwchours)
+											F.Intrinsic.Math.Mult(V.Local.fwchours,V.Local.fjobQty,V.Local.fwchours)
+											F.Intrinsic.Math.Add(V.Local.fHours,V.Local.fwchours,V.Local.fHours)
+										F.Intrinsic.Control.EndIf
+									F.ODBC.conA!rstLab.MoveNext
+									F.Intrinsic.Control.Loop
+								F.ODBC.conA!rstLab.Close
+						'if wc=SAW
+							F.Intrinsic.Control.elseIf(V.Local.sWCArray(V.Local.lWC),=,"SAW")
+							'get wc hours
+								F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE  from JOB_OPERATIONS  where LMO='L' and JOB='",V.Local.sJobOP,"'and SUFFIX='",V.Local.sSuffop,"' and PART='SAW' and HOURS_ACTUAL <> 0 ",V.Local.sLabor)
+								F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+									F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+										V.Local.fwchours.Set(V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL)
+											F.Intrinsic.Control.If(V.Local.fJQ,<>,0)
+												F.Intrinsic.Math.Div(V.Local.fwchours,V.Local.fJQ,V.Local.fwchours)
+												F.Intrinsic.Math.Mult(V.Local.fwchours,V.Local.fjobQty,V.Local.fwchours)
+												F.Intrinsic.Math.Add(V.Local.fHours,V.Local.fwchours,V.Local.fHours)
+											F.Intrinsic.Control.EndIf
+									F.ODBC.conA!rstLab.MoveNext
+									F.Intrinsic.Control.Loop
+								F.ODBC.conA!rstLab.Close
+						'if wc=GRND
+							F.Intrinsic.Control.elseIf(V.Local.sWCArray(V.Local.lWC),=,"GRND")
+							'get wc hours
+								F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE   from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and PART <>'SAW' and JOB='",V.Local.sJobOP,"'and SUFFIX='",V.Local.sSuffop,"' and WC_DEPT='",V.Local.sWCArray(V.Local.lWC),"'and WC_DEPT <> '' and SEQ <='996000'  and HOURS_ACTUAL <> 0 ",V.Local.sLabor)
+								F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+									F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+										V.Local.fwchours.Set(V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL)
+											F.Intrinsic.Control.If(V.Local.fJQ,<>,0)
+												F.Intrinsic.Math.Div(V.Local.fwchours,V.Local.fJQ,V.Local.fwchours)
+												F.Intrinsic.Math.Mult(V.Local.fwchours,V.Local.fjobQty,V.Local.fwchours)
+												F.Intrinsic.Math.Add(V.Local.fHours,V.Local.fwchours,V.Local.fHours)
+											F.Intrinsic.Control.EndIf
+									F.ODBC.conA!rstLab.MoveNext
+									F.Intrinsic.Control.Loop
+								F.ODBC.conA!rstLab.Close
+						'else
+							F.Intrinsic.Control.Else
+							'get wc hours for whatever wc it is
+								F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE   from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and JOB='",V.Local.sJobOP,"'and SUFFIX='",V.Local.sSuffop,"' and WC_DEPT='",V.Local.sWCArray(V.Local.lWC),"'and WC_DEPT <> '' and SEQ <='996000'  and HOURS_ACTUAL <> 0 ",V.Local.sLabor)
+								F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+									F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+										V.Local.fwchours.Set(V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL)
+											F.Intrinsic.Control.If(V.Local.fJQ,<>,0)
+												F.Intrinsic.Math.Div(V.Local.fwchours,V.Local.fJQ,V.Local.fwchours)
+												F.Intrinsic.Math.Mult(V.Local.fwchours,V.Local.fjobQty,V.Local.fwchours)
+												F.Intrinsic.Math.Add(V.Local.fHours,V.Local.fwchours,V.Local.fHours)
+											F.Intrinsic.Control.EndIf
+									F.ODBC.conA!rstLab.MoveNext
+									F.Intrinsic.Control.Loop
+								F.ODBC.conA!rstLab.Close
+							F.Intrinsic.Control.EndIf
+						'if the wc has hours, they will go in to the line, otherwise, leave the field blank (not 0)
+							F.Intrinsic.Control.If(V.Local.fHours,=,0)
+								V.Local.sHours.Set("")
+							F.Intrinsic.Control.Else
+								F.Intrinsic.String.Format(V.Local.fHours,"0.00",V.Local.sHours)
+							F.Intrinsic.Control.EndIf
+							F.Intrinsic.String.Concat(V.Local.sLhrs,"*!*",V.Local.sHours,V.Local.sLhrs)
+					'else if wc=PREP
+						F.Intrinsic.Control.Else
+						'if not a misc seq, add in the hours
+	'								F.Intrinsic.Control.If(V.Local.sSeq,<>,"996000")
+								F.Intrinsic.String.Concat(V.Local.sLhrs,"*!*",V.Local.sLhrs)
+						'if a misc seq, make sure the hours will fall in the correct column
+	'								F.Intrinsic.Control.Else
+	'									F.Intrinsic.String.Concat("*!**!**!**!**!**!**!**!**!*",V.Local.sHrsAct,"*!**!**!**!**!*",V.Local.sLhrs)
+	'									V.Local.fAmt.Set(0)
+	'								F.Intrinsic.Control.EndIf
+						F.Intrinsic.Control.EndIf
+				'move to the next wc
+					F.Intrinsic.Control.Next(V.Local.lWC)
+	'-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+				'reset hours variables to blank or 0
+					V.Local.sOutHrs.Set("")
+					V.Local.fHours.Set(0)
+					V.Local.fwchours.Set(0)
+
+				'going to get Material $
+					F.Intrinsic.String.Concat("select sum(DOLLARS_ACTUAL) as M  from JOB_OPERATIONS where LMO='M' and JOB='",V.Local.sJobOP,"'and SUFFIX='",V.Local.sSuffop,"' and JOB <>'' ",V.Local.sLabor)
+					F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+					'field can just be blank, not necesarily 0.  Don't need to do all of this if it is blank
+						F.Intrinsic.Control.If(V.ODBC.conA!rstLab.FieldVal!M,<>,"")
+						'if the Job Quanity is not 0
+							F.Intrinsic.Control.If(V.Local.fJQ,<>,0)
+							'divide the dollars to get the purchase amt
+								F.Intrinsic.Math.Div(V.ODBC.conA!rstLab.FieldVal!M,V.Local.fJQ,V.Local.fAmt)
+							F.Intrinsic.Control.Else
+								V.Local.fAmt.Set(0)
+							F.Intrinsic.Control.EndIf
+							F.Intrinsic.Math.Mult(V.Local.fAmt,V.Local.fjobQty,V.Local.fAmt)
+						F.Intrinsic.Control.EndIf
+					F.ODBC.conA!rstLab.Close
+
+				'get total Outside $
+					F.Intrinsic.String.Concat("select sum(DOLLARS_ACTUAL)  as HOURS_ACTUAL from JOB_OPERATIONS where LMO='O' and JOB='",V.Local.sJobOP,"'and SUFFIX='",V.Local.sSuffop,"' and JOB <>'' ",V.Local.sLabor)
+					F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+						F.Intrinsic.Control.If(V.ODBC.conA!rstLab.FieldVal!HOURS_ACTUAL,<>,"")
+							F.Intrinsic.Control.If(V.Local.fjobQty,<>,0)
+								F.Intrinsic.Control.If(V.Local.fJQ,<>,0)
+									F.Intrinsic.Math.Div(V.ODBC.conA!rstLab.FieldVal!HOURS_ACTUAL,V.Local.fJQ,V.Local.fHours)
+								F.Intrinsic.Control.Else
+									V.Local.fHours.set(0)
+								F.Intrinsic.Control.EndIf
+								F.Intrinsic.Math.Mult(V.Local.fHours,V.Local.fjobQty,V.Local.fHours)
+							F.Intrinsic.Control.EndIf
+						F.Intrinsic.Control.EndIf
+					'format non-zero values
+						F.Intrinsic.Control.If(V.Local.fHours,=,0)
+							V.Local.sOutHrs.Set("")
+						F.Intrinsic.Control.Else
+							F.Intrinsic.String.Format(V.Local.fHours,"0.00",V.Local.sOutHrs)
+						F.Intrinsic.Control.EndIf
+					F.ODBC.conA!rstLab.Close
+				F.Intrinsic.Control.Else
+					V.Local.fpUr.Set(V.ODBC.conA!rstOSel.FieldVal!Dollars_Actual)
+					V.Local.sLhrs.Set("*!**!**!**!**!**!**!**!**!**!**!**!**!**!*")
+				F.Intrinsic.Control.EndIf
+			F.ODBC.conA!rstJHb.Close
+	'if it is a purchased part
+		F.Intrinsic.Control.Else
+			V.Local.fPur.Set(V.ODBC.conA!rstOSel.FieldVal!DOLLARS_ACTUAL)
+			V.Local.sLhrs.Set("*!**!**!**!**!**!**!**!**!**!**!**!**!**!*")
+		F.Intrinsic.Control.EndIf
+
+
+		'just formatting non-zero values
+			F.Intrinsic.Control.If(V.Local.fAmt,=,0)
+				V.Local.sAmt.Set("")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Format(V.Local.fAmt,"0.00",V.Local.sAmt)
+			F.Intrinsic.Control.EndIf
+
+			F.Intrinsic.Control.If(V.Local.fjobQty,<>,0)
+				F.Intrinsic.Math.Div(V.Local.fPur,V.Local.fjobQty,V.Local.fPur)
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.If(V.Local.fPur,<>,0)
+				F.Intrinsic.String.Format(V.Local.fPur,"0.00",V.Local.sPur)
+			F.Intrinsic.Control.Else
+				V.Local.spUr.Set("")
+			F.Intrinsic.Control.EndIf
+
+	'write line
+		F.Intrinsic.String.Concat(V.Local.sFile,"$!$",V.Local.sPart,"*!*",V.Local.sDesc,"*!*",V.Local.sAmt,"*!*",V.Local.sLBS,"*!*",V.Local.spUr,"*!*",V.Local.sLhrs,"*!*9",V.Local.sFile)
+		F.Intrinsic.Math.Add(V.Local.lRowCt,1,V.Local.lRowCt)
+
+	F.ODBC.conA!rstOSel.MoveNext
+	F.Intrinsic.Control.Loop
+F.ODBC.conA!rstOSel.Close
+
+F.Intrinsic.Variable.AddRV("File",V.Local.sFile)
+F.Intrinsic.Variable.AddRV("RowCt",V.Local.lRowCt)
+
+
+Program.Sub.ParentDetail.End
+
+Program.Sub.MiscLO.Start
+
+
+V.Local.sFile.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sDesc.Declare(String)
+V.Local.spUr.Declare(String)
+V.Local.sAmt.Declare(String)
+V.Local.fPur.Declare(Float)
+V.Local.fAmt.Declare(Float)
+V.Local.fjobQty.Declare(Float)
+V.Local.sOSelect.Declare(String)
+V.Local.sLabor.Declare(String)
+V.Local.sCode.Declare(String)
+V.Local.sLBS.Declare(String)
+V.Local.lRowCt.Declare(Long)
+V.Local.sJHb.Declare(String)
+V.Local.SJOBOP.Declare(String)
+V.Local.sSuffop.Declare(String)
+V.Local.fJQ.Declare(Float)
+V.Local.lWC.Declare(Long)
+V.Local.fHours.Declare(Float)
+V.Local.sWCArray.Declare(String)
+V.Local.fwchours.Declare(Float)
+V.Local.sOutHrs.Declare(String)
+V.Local.sHours.Declare(String)
+V.Local.sLhrs.Declare(String)
+V.Local.fMiscL.Declare(Float)
+
+V.Local.lRowCt.Set(0)
+V.Local.fjobQty.Set(V.uGlobal.uJobParent(v.Args.For)!Qty_Order)
+'split the finite list of workcenters
+F.Intrinsic.String.Split("SAW*!*WJ*!*WELD*!*LRGM*!*SMLM*!*GRND*!*PREP*!*PNT*!*REWK*!*ELEC*!*ASYS*!*ASSY*!*SHIP*!*","*!*",V.Local.sWCArray)
+
+'get miscl hours
+F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE,UNITS_OPEN from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and JOB='",V.Args.Job,"'and SUFFIX='",V.Args.Suffix,"' and SEQ ='996000'  and HOURS_ACTUAL <> 0",V.Local.sLabor)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+	F.Intrinsic.Control.If(V.ODBC.conA!rstLab.EOF,=,False)
+		V.Local.fMiscL.Set(V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL)
+	F.Intrinsic.Control.EndIf
+F.ODBC.conA!rstLab.Close
+
+'for each workcenter
+F.Intrinsic.Control.For(V.Local.lWC,V.Local.sWCArray.LBound,V.Local.sWCArray.UBound,1)
+'default hours to 0
+	V.Local.fHours.Set(0)
+'if wc="REWRK"
+	F.Intrinsic.Control.If(V.Local.sWCArray(V.Local.lWC),=,"REWK")
+	'get wc hours
+		F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE,UNITS_OPEN from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and JOB='",V.Args.Job,"'and SUFFIX='",V.Args.Suffix,"' and SEQ ='998500'  and HOURS_ACTUAL <> 0",V.Local.sLabor)
+		F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+			F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+				F.Intrinsic.Math.Add(V.Local.fHours,V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL,V.Local.fHours)
+			F.ODBC.conA!rstLab.MoveNext
+			F.Intrinsic.Control.Loop
+			F.Intrinsic.Math.Add(V.Local.fMiscL,V.Local.fHours,V.Local.fHours)
+		F.ODBC.conA!rstLab.Close
+'if wc=SAW
+	F.Intrinsic.Control.elseIf(V.Local.sWCArray(V.Local.lWC),=,"SAW")
+	'get wc hours
+	F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE  from JOB_OPERATIONS  where LMO='L' and JOB='",V.Args.Job,"'and SUFFIX='",V.Args.Suffix,"' and PART='SAW' and HOURS_ACTUAL <> 0 ",V.Local.sLabor)
+		F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+			F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+				F.Intrinsic.Math.Add(V.Local.fHours,V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL,V.Local.fHours)
+			F.ODBC.conA!rstLab.MoveNext
+			F.Intrinsic.Control.Loop
+		F.ODBC.conA!rstLab.Close
+'if wc=GRND
+	F.Intrinsic.Control.elseIf(V.Local.sWCArray(V.Local.lWC),=,"GRND")
+	'get wc hours
+		F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE   from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and PART <>'SAW' and JOB='",V.Args.Job,"'and SUFFIX='",V.Args.Suffix,"' and WC_DEPT='",V.Local.sWCArray(V.Local.lWC),"'and WC_DEPT <> '' and SEQ <='996000'  and HOURS_ACTUAL <> 0 ",V.Local.sLabor)
+		F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+			F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+				F.Intrinsic.Math.Add(V.Local.fHours,V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL,V.Local.fHours)
+			F.ODBC.conA!rstLab.MoveNext
+			F.Intrinsic.Control.Loop
+		F.ODBC.conA!rstLab.Close
+'else
+	F.Intrinsic.Control.Else
+	'get wc hours for whatever wc it is
+		F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE   from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and JOB='",V.Args.Job,"'and SUFFIX='",V.Args.Suffix,"' and WC_DEPT='",V.Local.sWCArray(V.Local.lWC),"'and WC_DEPT <> '' and SEQ <='996000'  and HOURS_ACTUAL <> 0 ",V.Local.sLabor)
+		F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+			F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+				F.Intrinsic.Math.Add(V.Local.fHours,V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL,V.Local.fHours)
+			F.ODBC.conA!rstLab.MoveNext
+			F.Intrinsic.Control.Loop
+		F.ODBC.conA!rstLab.Close
+	F.Intrinsic.Control.EndIf
+
+'if the wc has hours, they will go in to the line, otherwise, leave the field blank (not 0)
+	F.Intrinsic.Control.If(V.Local.fHours,=,0)
+		V.Local.sHours.Set("")
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Format(V.Local.fHours,"0.00",V.Local.sHours)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.Concat(V.Local.sLhrs,"*!*",V.Local.sHours,V.Local.sLhrs)
+
+'move to the next wc
+F.Intrinsic.Control.Next(V.Local.lWC)
+	'-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'reset hours variables to blank or 0
+V.Local.sOutHrs.Set("")
+V.Local.fHours.Set(0)
+V.Local.fwchours.Set(0)
+'get total Outside $
+F.Intrinsic.String.Concat("select sum(DOLLARS_ACTUAL)  as HOURS_ACTUAL from JOB_OPERATIONS where LMO='O' and JOB='",V.Args.Job,"'and SUFFIX='",V.Args.Suffix,"' and JOB <>'' ",V.Local.sLabor)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+	F.Intrinsic.Control.If(V.ODBC.conA!rstLab.FieldVal!HOURS_ACTUAL,<>,"")
+		V.Local.fHours.Set(V.ODBC.conA!rstLab.FieldVal!HOURS_ACTUAL)
+	F.Intrinsic.Control.EndIf
+'format non-zero values
+	F.Intrinsic.Control.If(V.Local.fHours,=,0)
+		V.Local.sOutHrs.Set("")
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Format(V.Local.fHours,"0.00",V.Local.sOutHrs)
+	F.Intrinsic.Control.EndIf
+F.ODBC.conA!rstLab.Close
+
+F.Intrinsic.Math.Add(V.Local.lRowCt,1,V.Local.lRowCt)
+
+'V.Local.sOutHrs,"*!*",V.Local.sMiscL
+F.Intrinsic.Variable.AddRV("OutHrs",V.Local.sOutHrs)
+F.Intrinsic.Variable.AddRV("MiscL",V.Local.sLhrs)
+F.Intrinsic.Variable.AddRV("RowCt",V.Local.lRowCt)
+
+
+Program.Sub.MiscLO.End
+
+Program.Sub.ChildDetail.Start
+
+V.Local.sFile.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sDesc.Declare(String)
+V.Local.spUr.Declare(String)
+V.Local.sAmt.Declare(String)
+V.Local.fPur.Declare(Float)
+V.Local.fAmt.Declare(Float)
+V.Local.fjobQty.Declare(Float)
+V.Local.sOSelect.Declare(String)
+V.Local.sLabor.Declare(String)
+V.Local.sCode.Declare(String)
+V.Local.sLBS.Declare(String)
+V.Local.lRowCt.Declare(Long)
+V.Local.sJHb.Declare(String)
+V.Local.SJOBOP.Declare(String)
+V.Local.sSuffop.Declare(String)
+V.Local.fJQ.Declare(Float)
+V.Local.lWC.Declare(Long)
+V.Local.fHours.Declare(Float)
+V.Local.sWCArray.Declare(String)
+V.Local.fwchours.Declare(Float)
+V.Local.sOutHrs.Declare(String)
+V.Local.sHours.Declare(String)
+V.Local.sLhrs.Declare(String)
+
+V.Local.lRowCt.Set(0)
+V.Local.fjobQty.Set(V.uGlobal.uJobParent(v.Args.For)!Qty_Order)
+'split the finite list of workcenters
+F.Intrinsic.String.Split("SAW*!*WJ*!*WELD*!*LRGM*!*SMLM*!*GRND*!*PREP*!*PNT*!*REWK*!*ELEC*!*ASYS*!*ASSY*!*SHIP*!*","*!*",V.Local.sWCArray)
+F.Intrinsic.Control.For(V.Local.lWC,V.Local.sWCArray.LBound,V.Local.sWCArray.UBound,1)
+'default hours to 0
+	V.Local.fHours.Set(0)
+'if wc="REWRK"
+	F.Intrinsic.Control.If(V.Local.sWCArray(V.Local.lWC),=,"REWK")
+	'get wc hours
+		F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE,UNITS_OPEN  from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and JOB='",V.Args.Job,"'and SUFFIX='",V.Args.Suffix,"' and SEQ ='998500'  and HOURS_ACTUAL <> 0",V.Local.sLabor)
+		F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+			F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+				F.Intrinsic.Math.Add(V.Local.fHours,V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL,V.Local.fHours)
+			F.ODBC.conA!rstLab.MoveNext
+			F.Intrinsic.Control.Loop
+		F.ODBC.conA!rstLab.Close
+'if wc=SAW
+	F.Intrinsic.Control.elseIf(V.Local.sWCArray(V.Local.lWC),=,"SAW")
+	'get wc hours
+		F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE  from JOB_OPERATIONS  where LMO='L' and JOB='",V.Args.Job,"' and SUFFIX='",V.Args.Suffix,"' and PART='SAW' and HOURS_ACTUAL<>0",V.Local.sLabor)
+		F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+			F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+				F.Intrinsic.Math.Add(V.Local.fHours,V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL,V.Local.fHours)
+			F.ODBC.conA!rstLab.MoveNext
+			F.Intrinsic.Control.Loop
+		F.ODBC.conA!rstLab.Close
+'if wc=GRND
+	F.Intrinsic.Control.elseIf(V.Local.sWCArray(V.Local.lWC),=,"GRND")
+	'get wc hours
+		F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE   from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and PART <>'SAW' and JOB='",V.Args.Job,"' and SUFFIX='",V.Args.Suffix,"' and WC_DEPT='",V.Local.sWCArray(V.Local.lWC),"'and WC_DEPT <> '' and SEQ <='996000'  and HOURS_ACTUAL <> 0 ",V.Local.sLabor)
+		F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+			F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+				F.Intrinsic.Math.Add(V.Local.fHours,V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL,V.Local.fHours)
+			F.ODBC.conA!rstLab.MoveNext
+			F.Intrinsic.Control.Loop
+		F.ODBC.conA!rstLab.Close
+'else
+	F.Intrinsic.Control.Else
+	'get wc hours for whatever wc it is
+		F.Intrinsic.String.Concat("select HOURS_ACTUAL,UNITS_OPEN  as UNITS_COMPLETE   from JOB_OPERATIONS inner join WORKCENTERS on JOB_OPERATIONS.PART=WORKCENTERS.MACHINE where LMO='L' and JOB='",V.Args.Job,"' and SUFFIX='",V.Args.Suffix,"'  and WC_DEPT='",V.Local.sWCArray(V.Local.lWC),"'and WC_DEPT <> '' and SEQ <='996000'  and HOURS_ACTUAL <> 0 ",V.Local.sLabor)
+		F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+			F.Intrinsic.Control.DoUntil(V.ODBC.conA!rstLab.EOF,=,True)
+				F.Intrinsic.Math.Add(V.Local.fHours,V.ODBC.conA!rstLab.FieldValtrim!HOURS_ACTUAL,V.Local.fHours)
+			F.ODBC.conA!rstLab.MoveNext
+			F.Intrinsic.Control.Loop
+		F.ODBC.conA!rstLab.Close
+	F.Intrinsic.Control.EndIf
+'if the wc has hours, they will go in to the line, otherwise, leave the field blank (not 0)
+	F.Intrinsic.Control.If(V.Local.fHours,=,0)
+		V.Local.sHours.Set("")
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Format(V.Local.fHours,"0.00",V.Local.sHours)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.Concat(V.Local.sLhrs,"*!*",V.Local.sHours,V.Local.sLhrs)
+
+'move to the next wc
+F.Intrinsic.Control.Next(V.Local.lWC)
+'-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'reset hours variables to blank or 0
+V.Local.sOutHrs.Set("")
+V.Local.fHours.Set(0)
+V.Local.fwchours.Set(0)
+
+'going to get Material $
+F.Intrinsic.String.Concat("select sum(DOLLARS_ACTUAL) as M  from JOB_OPERATIONS where LMO='M' and JOB='",V.Args.Job,"' and SUFFIX='",V.Args.Suffix,"' ",V.Local.sLabor)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+'field can just be blank, not necesarily 0.  Don't need to do all of this if it is blank
+	F.Intrinsic.Control.If(V.ODBC.conA!rstLab.FieldVal!M,<>,"")
+		V.Local.fAmt.Set(V.ODBC.conA!rstLab.FieldVal!M)
+	F.Intrinsic.Control.EndIf
+F.ODBC.conA!rstLab.Close
+
+'get total Outside $
+F.Intrinsic.String.Concat("select sum(DOLLARS_ACTUAL)  as HOURS_ACTUAL from JOB_OPERATIONS where LMO='O' and JOB='",V.Args.Job,"' and SUFFIX='",V.Args.Suffix,"' ",V.Local.sLabor)
+F.ODBC.Connection!conA.OpenRecordsetRO("rstLab",V.Local.sLabor)
+	F.Intrinsic.Control.If(V.ODBC.conA!rstLab.FieldVal!HOURS_ACTUAL,<>,"")
+		V.Local.fHours.Set(V.ODBC.conA!rstLab.FieldVal!HOURS_ACTUAL)
+	F.Intrinsic.Control.EndIf
+'format non-zero values
+	F.Intrinsic.Control.If(V.Local.fHours,=,0)
+		V.Local.sOutHrs.Set("")
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Format(V.Local.fHours,"0.00",V.Local.sOutHrs)
+	F.Intrinsic.Control.EndIf
+F.ODBC.conA!rstLab.Close
+
+'just formatting non-zero values
+F.Intrinsic.Control.If(V.Local.fAmt,=,0)
+	V.Local.sAmt.Set("")
+F.Intrinsic.Control.Else
+	F.Intrinsic.String.Format(V.Local.fAmt,"0.00",V.Local.sAmt)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.If(V.Local.fjobQty,<>,0)
+	F.Intrinsic.Math.Div(V.Local.fPur,V.Local.fjobQty,V.Local.fPur)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Local.fPur,<>,0)
+	F.Intrinsic.String.Format(V.Local.fPur,"0.00",V.Local.sPur)
+F.Intrinsic.Control.Else
+	V.Local.spUr.Set("")
+F.Intrinsic.Control.EndIf
+
+'write line
+F.Intrinsic.String.Concat(V.Local.sFile,"*!*",V.Local.sAmt,"*!*",V.Local.sLBS,"*!*",V.Local.spUr,"*!*",V.Local.sLhrs,"*!*9",V.Local.sFile)
+F.Intrinsic.Math.Add(V.Local.lRowCt,1,V.Local.lRowCt)
+
+F.Intrinsic.Variable.AddRV("File",V.Local.sFile)
+F.Intrinsic.Variable.AddRV("RowCt",V.Local.lRowCt)
+
+
+
+Program.Sub.ChildDetail.End
+
+Program.Sub.Comments.Start
+${$0$}$Overall_Cost$}$JCT$}$04/20/2012
+${$4$}$0$}$$}$0$}$-1$}$JCT$}$04/20/2012 8:48:33 AM$}$change ot ignore user_10 field
+change to sub cmdbrws_click
+have browser look for all 000 suffix
+${$4$}$0$}$$}$1$}$-1$}$JCT$}$01/28/2011 11:14:22 AM$}$made change to allow selection of specific work order suffix
+${$4$}$0$}$$}$2$}$-1$}$JCT$}$08/23/2011 11:14:41 AM$}$made change to allow selection of just level 1&2 wo's
+
+${$4$}$0$}$$}$3$}$-1$}$JCT$}$03/28/2012 11:15:08 AM$}$made change per Diane:it is not showing closed work orders.  This report should show all.  The status report should not show closed work orders.
+
+${$4$}$0$}$$}$4$}$-1$}$JCT$}$06/14/2012 8:49:59 AM$}$Per quote 3645
+1 sheet for each parent (parent=job/suffix with part beginnig with 3 alpha characters.  Detail on sheet will be all Job/Suffix/Parts after the parent, before next parent in sequence
+Program.Sub.Comments.End
+
